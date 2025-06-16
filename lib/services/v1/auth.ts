@@ -7,13 +7,12 @@ import {
   UserResponse,
 } from '@/lib/types/auth';
 import { clearTokens, setTokens } from '@/lib/utils';
-import { privateApi } from '@/lib/privateApi';
-import { publicApi } from '@/lib/publicApi';
+import { clientApi } from '@/lib/clientApi';
 
 export const authService = {
   // Login
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await publicApi.post<AuthResponse>('/auth/login', data);
+    const response = await clientApi.post<AuthResponse>('/public/auth/login', data);
     setTokens({
       accessToken: response.data.token.accessToken,
       refreshToken: response.data.token.refreshToken,
@@ -25,7 +24,7 @@ export const authService = {
 
   // Register
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await publicApi.put<AuthResponse>('/auth/register', data);
+    const response = await clientApi.put<AuthResponse>('/public/auth/register', data);
     setTokens({
       accessToken: response.data.token.accessToken,
       refreshToken: response.data.token.refreshToken,
@@ -37,25 +36,25 @@ export const authService = {
 
   // Get current user info
   async getCurrentUser(): Promise<UserResponse> {
-    const response = await privateApi.get<UserResponse>('/auth/me');
+    const response = await clientApi.get<UserResponse>('/auth/me');
     return response.data;
   },
 
   // Update current user profile
   async updateProfile(data: UpdateProfileRequest): Promise<UserResponse> {
-    const response = await privateApi.patch<UserResponse>('/auth/me', data);
+    const response = await clientApi.patch<UserResponse>('/auth/me', data);
     return response.data;
   },
 
   // Change password
   async changePassword(data: ChangePasswordRequest): Promise<string> {
-    const response = await privateApi.post<string>('/auth/change-password', data);
+    const response = await clientApi.post<string>('/auth/change-password', data);
     return response.data;
   },
 
   // Refresh token
   async refreshToken(): Promise<TokenResponse> {
-    const response = await privateApi.post<TokenResponse>('/auth/refresh', {});
+    const response = await clientApi.post<TokenResponse>('/auth/refresh', {});
     setTokens({
       accessToken: response.data.accessToken,
       refreshToken: response.data.refreshToken,
@@ -67,14 +66,14 @@ export const authService = {
 
   // Logout
   async logout(): Promise<string> {
-    const response = await privateApi.post<string>('/auth/logout', {});
+    const response = await clientApi.post<string>('/auth/logout', {});
     clearTokens();
     return response.data;
   },
 
   // Telegram authentication
   async telegramAuth(data: TelegramAuthRequest): Promise<AuthResponse> {
-    const response = await publicApi.put<AuthResponse>('/auth/telegram', data);
+    const response = await clientApi.put<AuthResponse>('/public/auth/telegram', data);
     setTokens({
       accessToken: response.data.token.accessToken,
       refreshToken: response.data.token.refreshToken,

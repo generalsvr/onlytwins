@@ -5,17 +5,17 @@ import {
   ChatResponse,
   ConversationSummary,
 } from '@/lib/types/chat';
-import { privateApi } from '@/lib/privateApi';
+import { clientApi } from '@/lib/clientApi';
 export const chatService = {
   // Send message
   async sendMessage(data: ChatRequest): Promise<ChatResponse> {
-    const response = await privateApi.put<ChatResponse>('/chat/send', data);
+    const response = await clientApi.put<ChatResponse>('/chat/send', data);
     return response.data;
   },
 
   // Get conversation history
   async getConversationHistory(conversationId: string): Promise<ChatMessage[]> {
-    const response = await privateApi.get<ChatMessage[]>(
+    const response = await clientApi.get<ChatMessage[]>(
       `/chat/conversations/${conversationId}`
     );
     return response.data;
@@ -23,7 +23,7 @@ export const chatService = {
 
   // Get agent conversations
   async getAgentConversations(agentId: number): Promise<ConversationSummary[]> {
-    const response = await privateApi.get<ConversationSummary[]>(
+    const response = await clientApi.get<ConversationSummary[]>(
       `/chat/agents/${agentId}/conversations`
     );
     return response.data;
@@ -31,7 +31,7 @@ export const chatService = {
 
   // Get dashboard conversations
   async getDashboardConversations(): Promise<ConversationSummary[]> {
-    const response = await privateApi.get<ConversationSummary[]>(
+    const response = await clientApi.get<ConversationSummary[]>(
       '/chat/dashboard-conversations'
     );
     return response.data;
@@ -42,7 +42,7 @@ export const chatService = {
     userId: number,
     agentId?: number
   ): Promise<ConversationSummary[]> {
-    const response = await privateApi.get<ConversationSummary[]>(
+    const response = await clientApi.get<ConversationSummary[]>(
       `/chat/users/${userId}/conversations`,
       {
         params: {
@@ -59,7 +59,7 @@ export const chatService = {
 
   // Get my conversations
   async getMyConversations(): Promise<ConversationSummary[]> {
-    const response = await privateApi.get<ConversationSummary[]>(
+    const response = await clientApi.get<ConversationSummary[]>(
       '/chat/my-conversations'
     );
     return response.data;

@@ -3,27 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
-import SafeImage from '@/components/safe-image';
-import { useConversations } from '@/lib/hooks/useConversations';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { ConversationSummary } from '@/lib/types/chat';
 
 interface ChatPageProps {
-  onOpenChat?: (characterId: number) => void;
-  isAuthenticated?: boolean;
-  onAuthRequired?: (mode: 'login' | 'signup') => void;
+  conversations: ConversationSummary[] | null;
+  error: Error | null;
 }
 
-export default function ChatPage({}: ChatPageProps) {
-  const { user, isAuthenticated } = useAuthStore((state) => state);
+export default function ChatPage({ conversations, error }: ChatPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(true);
   const router = useRouter();
-  const { conversations, isLoading, error } = useConversations(
-    user?.id || null
-  );
+  // const { conversations, isLoading, error } = useConversations(
+  //   user?.id || null
+  // );
 
   // Detect if we're on mobile
   useEffect(() => {
@@ -173,42 +170,23 @@ export default function ChatPage({}: ChatPageProps) {
         </div>
       )}
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className={'flex flex-col gap-4'}>
-          {Array(5)
-            .fill(null)
-            .map((_, index) => (
-              <div className="card-container flex flex-col gap-4 p-4 animate-skeleton rounded-xl relative">
-                <div className="flex items-center gap-4   rounded-lg bg-transparent ">
-                  <div className="avatar-placeholder w-[65px] h-[65px] bg-gray-700 rounded-full "></div>
-                  <div className="flex-1">
-                    <div className="name-placeholder h-4 bg-gray-700 rounded w-1/3 mb-2 "></div>
-                    <div className="message-placeholder h-4 bg-gray-700 rounded w-2/3 "></div>
-                  </div>
-                </div>
-                <div className="timestamp-placeholder h-4 bg-gray-700 rounded w-32 absolute right-4 top-4 "></div>
-              </div>
-            ))}
-        </div>
-      )}
 
       {/* Chat List */}
-      {!isLoading && !error && conversations.length === 0 && (
+      {!error && conversations && conversations.length === 0 && (
         <div className="text-center py-4">
           <p className="text-zinc-400">No conversations found</p>
         </div>
       )}
 
-      {!isLoading && !error && conversations.length > 0 && (
+      {!error && conversations && conversations.length > 0 && (
         <div
           className={
             isMobile ? 'divide-y divide-zinc-800' : 'grid grid-cols-1 gap-3'
           }
         >
-          {conversations.map((chat) => (
+          {conversations && conversations.map((chat, index) => (
             <motion.div
-              key={chat.id}
+              key={`idx-${chat.id}-i${index}`}
               className={`${isMobile ? 'p-4' : 'p-4 bg-zinc-900 rounded-xl'} flex items-center cursor-pointer`}
               onClick={() =>
                 router.push(

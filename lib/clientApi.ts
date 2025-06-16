@@ -3,33 +3,39 @@ import humps from 'humps';
 import { CustomAxiosRequestConfig } from '@/lib/types/axios';
 import { getTokens, clearTokens, setTokens } from '@/lib/utils';
 import { TokenResponse } from '@/lib/types/auth';
+import { cookies } from 'next/headers';
 
-const privateApi: AxiosInstance = axios.create({
-  baseURL: '/api/private',
+const clientApi: AxiosInstance = axios.create({
+  baseURL: 'http://localhost:3000/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 // Request interceptor: Add Bearer token and transform keys
-privateApi.interceptors.request.use(
+clientApi.interceptors.request.use(
   async (config: CustomAxiosRequestConfig) => {
     let { accessToken, refreshToken, expiresIn } = getTokens();
+    const isPrivateRoute = !config.url?.includes('/public/')
 
-    // Add Authorization header if token exists and not already set
-    if (accessToken && !config.headers['Authorization']) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-    if (!accessToken && refreshToken && config.url?.includes('/auth/refresh')) {
-      config.headers['Authorization'] = `Bearer ${refreshToken}`;
-    }
-
-    // Transform request data and params
     if (config.data) {
       config.data = humps.decamelizeKeys(config.data);
     }
     if (config.params) {
       config.params = humps.decamelizeKeys(config.params);
+    }
+
+    if (isPrivateRoute) {
+      if (accessToken && !config.headers['Authorization']) {
+        config.headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      if (
+        !accessToken &&
+        refreshToken &&
+        config.url?.includes('/auth/refresh')
+      ) {
+        config.headers['Authorization'] = `Bearer ${refreshToken}`;
+      }
     }
 
     return config;
@@ -38,7 +44,7 @@ privateApi.interceptors.request.use(
 );
 
 // Response interceptor: Transform keys and handle token refresh
-privateApi.interceptors.response.use(
+clientApi.interceptors.response.use(
   (response) => {
     if (response.data) {
       response.data = humps.camelizeKeys(response.data);
@@ -56,11 +62,12 @@ privateApi.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const { refreshToken } = getTokens();
+
         if (!refreshToken) {
           throw new Error('No refresh token available');
         }
         // Request new tokens using refresh token
-        const response = await privateApi.post<TokenResponse>(
+        const response = await clientApi.post<TokenResponse>(
           '/api/auth/refresh',
           {},
           {
@@ -84,7 +91,7 @@ privateApi.interceptors.response.use(
 
         // Update original request with new token
         originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
-        return privateApi(originalRequest);
+        return clientApi(originalRequest);
       } catch (refreshError) {
         clearTokens();
         // Optionally redirect to login
@@ -98,4 +105,4 @@ privateApi.interceptors.response.use(
   }
 );
 
-export { privateApi, setTokens, clearTokens };
+export { clientApi, setTokens, clearTokens };

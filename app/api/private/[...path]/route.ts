@@ -1,6 +1,6 @@
 // app/api/auth/[...path]/route.ts
 import { NextResponse } from 'next/server';
-import { privateApi } from '@/lib/privateApi';
+import { clientApi } from '@/lib/clientApi';
 
 const EXTERNAL_API_URL = 'https://platform.onlytwins.ai/api/v1';
 
@@ -11,7 +11,7 @@ export async function GET(request: Request, { params }: { params: { path: string
   const path = resolvedParams.path.join('/');
   const url = `${EXTERNAL_API_URL}/${path}`;
   try {
-    const response = await privateApi.get(url, {
+    const response = await clientApi.get(url, {
       headers: {
         Authorization: request.headers.get('Authorization'),
         'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ export async function POST(request: Request, { params }: { params: { path: strin
     token: request.headers.get('Authorization')
   })
   try {
-    const response = await privateApi.post(url, body, {
+    const response = await clientApi.post(url, body, {
       headers: {
         Authorization: request.headers.get('Authorization') || '',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
@@ -79,7 +79,7 @@ export async function PUT(request: Request, { params }: { params: { path: string
     token: request.headers.get('Authorization')
   })
   try {
-    const response = await privateApi.put(url, body, {
+    const response = await clientApi.put(url, body, {
       headers: {
         ...(authToken && {Authorization: authToken})
       },
@@ -107,7 +107,7 @@ export async function PATCH(request: Request, { params }: { params: { path: stri
   const body = await request.json();
 
   try {
-    const response = await privateApi.patch(url, body, {
+    const response = await clientApi.patch(url, body, {
       headers: {
         Authorization: request.headers.get('Authorization') || '',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',

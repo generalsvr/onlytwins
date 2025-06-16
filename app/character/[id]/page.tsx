@@ -2,12 +2,6 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import StatusBar from '@/components/status-bar';
-import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
-import SafeImage from '@/components/safe-image';
-import DirectElevenlabsButton from '@/components/direct-elevenlabs-button';
-import { useCharacter } from '@/lib/hooks/useCharacter';
 import CharacterProfileTemplate from '@/components/character-profile-template';
 import CharacterProfileSkeleton from '@/components/character-profile-skeleton';
 import { useAgent } from '@/lib/hooks/useAgent';

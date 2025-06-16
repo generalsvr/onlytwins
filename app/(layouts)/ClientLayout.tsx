@@ -1,3 +1,4 @@
+// app/client-layout.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -16,105 +17,61 @@ import FailedPayment from '@/components/modals/failed-payment';
 import { Star, X } from 'lucide-react';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import { useNotificationStore } from '@/lib/stores/notificationStore';
-import Cookies from 'js-cookie';
 import { authService } from '@/lib/services/v1/auth';
 import { Loader } from '@/components/ui/loader';
 import { AuthProvider } from '@/contexts/AuthContext';
 
-export default function MainLayout({
-  children,
-}: Readonly<{
+interface InitialAuthState {
+  user: any;
+  isAuthenticated: boolean;
+  needsRefresh: boolean;
+}
+
+interface ClientLayoutProps {
   children: React.ReactNode;
-}>) {
-  const {
-    isAuthenticated,
-    setUser,
-    getCurrentUser,
-    telegramAuth,
-    setIsLoading,
-  } = useAuthStore();
+  initialAuthState: InitialAuthState;
+}
+
+export default function ClientLayout({
+  children,
+  initialAuthState,
+}: ClientLayoutProps) {
+  const { isAuthenticated, setUser, getCurrentUser, setIsLoading } =
+    useAuthStore();
+
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { openModal, closeModal } = useModalStore();
   const { isMobile } = useWindowSize();
-  const [singUpPopupShow, setSingUpPopupShow] = useState(true);
+  const [signUpPopupShow, setSignUpPopupShow] = useState(true);
   const { setToastNotification } = useNotificationStore();
 
-  // // Парсинг Telegram initData
-  // function parseQueryString(query: string) {
-  //   const result: Record<string, any> = {};
-  //   const pairs = query.split('&');
-  //
-  //   pairs.forEach((pair) => {
-  //     const [key, value] = pair.split('=');
-  //     const decodedKey = decodeURIComponent(key);
-  //     let decodedValue = decodeURIComponent(value);
-  //
-  //     if (decodedValue.startsWith('{') && decodedValue.endsWith('}')) {
-  //       try {
-  //         decodedValue = JSON.parse(decodedValue);
-  //       } catch (e) {
-  //         console.error(`Ошибка парсинга JSON для ключа ${decodedKey}:`, e);
-  //       }
-  //     }
-  //
-  //     result[decodedKey] = decodedValue;
-  //   });
-  //
-  //   return result;
-  // }
-
+  // Инициализация состояния из серверных данных
   useEffect(() => {
     const initializeAuth = async () => {
       setIsLoading(true);
-      const accessToken = Cookies.get('access_token');
-      const refreshToken = Cookies.get('refresh_token');
-      console.log('access_token', accessToken);
-      console.log('refresh_token', refreshToken);
-      // if (isTMA()) {
-      //   const initDataRaw = retrieveRawInitData();
-      //   if (initDataRaw) {
-      //     const data = parseQueryString(initDataRaw);
-      //     const user = data.user || {};
-      //     try {
-      //       await telegramAuth({
-      //         initData: initDataRaw,
-      //         id: parseInt(user.id) || 0,
-      //         firstName: user.first_name || '',
-      //         lastName: user.last_name || '',
-      //         username: user.username || '',
-      //         photoUrl: user.photo_url || '',
-      //         authDate: parseInt(data.auth_date) || 0,
-      //         hash: data.hash || '',
-      //       });
-      //     } catch (error) {
-      //       console.error('Telegram auth failed:', error);
-      //       setUser(null);
-      //     }
-      //   }
-      //   return;
-      // }
-      if (!accessToken && refreshToken) {
-        try {
-          await authService.refreshToken();
-          await getCurrentUser();
-        } catch (error) {
-          console.error('Failed to refresh token:', error);
-          setUser(null);
-        } finally {
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      if (!accessToken) {
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
 
       try {
-        await getCurrentUser();
+        // Если пользователь уже получен на сервере
+        if (initialAuthState.user) {
+          setUser(initialAuthState.user);
+          return;
+        }
+
+        // Если нужно обновить токен
+        if (initialAuthState.needsRefresh) {
+          try {
+            await authService.refreshToken();
+            await getCurrentUser();
+          } catch (error) {
+            console.error('Failed to refresh token:', error);
+            setUser(null);
+          }
+          return;
+        }
+
+        // Если не аутентифицирован
+        setUser(null);
       } catch (error) {
         console.error('Failed to initialize auth:', error);
         setUser(null);
@@ -124,8 +81,9 @@ export default function MainLayout({
     };
 
     initializeAuth();
-  }, [setUser, getCurrentUser, telegramAuth]);
+  }, [initialAuthState, setUser, getCurrentUser, setIsLoading]);
 
+  // Обработка параметров платежа
   useEffect(() => {
     const paymentStatus = searchParams.get('payment');
     if (paymentStatus === 'success') {
@@ -138,10 +96,6 @@ export default function MainLayout({
         time: 'now',
         read: true,
       });
-      // openModal({
-      //   type: 'message',
-      //   content: <SuccessPayment />,
-      // });
     } else if (paymentStatus === 'failed') {
       openModal({
         type: 'message',
@@ -153,7 +107,6 @@ export default function MainLayout({
   }, [searchParams, setToastNotification, openModal]);
 
   return (
-    // <TonConnectUIProvider manifestUrl="https://onlytwins.jundev.tech/tonconnect-manifest.json">
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
@@ -177,7 +130,8 @@ export default function MainLayout({
               {children}
             </div>
             <MainNavigation />
-            {!isAuthenticated && singUpPopupShow && (
+
+            {!isAuthenticated && signUpPopupShow && (
               <div
                 className={`fixed ${
                   isMobile ? 'bottom-16' : 'bottom-6 right-6 max-w-[550px]'
@@ -186,12 +140,10 @@ export default function MainLayout({
                 } transition-all duration-300 hover:scale-[1.02]`}
               >
                 <div className="relative flex items-center justify-between w-full p-5 px-8">
-                  {/* Close Button */}
                   <X
                     className="absolute top-2 right-2 w-5 h-5 text-white/80 hover:text-white cursor-pointer transition-colors"
-                    onClick={() => setSingUpPopupShow(false)}
+                    onClick={() => setSignUpPopupShow(false)}
                   />
-                  {/* Content */}
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       <Star />
@@ -201,7 +153,6 @@ export default function MainLayout({
                       up now!
                     </p>
                   </div>
-                  {/* Sign Up Button */}
                   <button
                     onClick={() =>
                       openModal({
@@ -225,6 +176,5 @@ export default function MainLayout({
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
-    // </TonConnectUIProvider>
   );
 }

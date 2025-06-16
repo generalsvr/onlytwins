@@ -4,30 +4,33 @@ import A11ySkipLink from '@/components/a11y-skip-link';
 import { ThemeProvider } from '@/contexts/theme-context';
 import { LanguageProvider } from '@/contexts/language-context';
 import { AuthProvider } from '@/contexts/auth-context';
-import MainLayout from '@/app/(layouts)/MainLayout';
+import ClientLayout from '@/app/(layouts)/ClientLayout';
 import { Inter } from 'next/font/google';
 import Modal from '@/components/modal';
 import ErrorBoundary from '@/app/(providers)/ErrorBoundary';
-import { Loader } from '@/components/ui/loader';
+import useAuthServerState from '@/lib/hooks/ssr/useAuthServerState';
+
 const inter = Inter({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700', '800'],
 });
-export default function RootLayout({
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const initialAuthState = await useAuthServerState();
   return (
     <html lang="en">
       <body className={`${inter.className} bg-black text-white hide-scrollbar`}>
         <A11ySkipLink />
         <ErrorBoundary>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <ThemeProvider>
             <LanguageProvider>
               <AuthProvider>
                 <Suspense fallback={<div>Loading...</div>}>
-                  <MainLayout>{children}</MainLayout>
+                  <ClientLayout initialAuthState={initialAuthState}>{children}</ClientLayout>
                   <Modal />
                 </Suspense>
               </AuthProvider>
@@ -39,6 +42,3 @@ export default function RootLayout({
   );
 }
 
-export const metadata = {
-  generator: 'v0.dev',
-};

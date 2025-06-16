@@ -57,14 +57,11 @@ export interface CharacterProfileData {
 }
 
 interface CharacterProfileTemplateProps {
-  character: AgentResponse;
-  isAuthenticated: boolean;
-  onAuthRequired: (mode: 'login' | 'signup') => void;
+  character: AgentResponse
 }
 
 export default function CharacterProfileTemplate({
   character,
-  onAuthRequired,
 }: CharacterProfileTemplateProps) {
   const [activeTab, setActiveTab] = useState('gallery');
   const [isFollowing, setIsFollowing] = useState(false);
@@ -88,7 +85,6 @@ export default function CharacterProfileTemplate({
 
   const handleLike = (mediaIndex: number) => {
     if (!isAuthenticated) {
-      onAuthRequired('signup');
       return;
     }
 
@@ -103,7 +99,6 @@ export default function CharacterProfileTemplate({
 
   const handleBuyContent = (contentId: number) => {
     if (!isAuthenticated) {
-      onAuthRequired('signup');
       return;
     }
     // Handle purchase logic
@@ -112,7 +107,6 @@ export default function CharacterProfileTemplate({
 
   const handleVoiceCallClick = () => {
     if (!isAuthenticated) {
-      onAuthRequired('signup');
       return;
     }
     setIsVoiceCallModalOpen(true);

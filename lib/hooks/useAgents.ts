@@ -23,8 +23,8 @@ export function useAgents(isPublic: boolean) {
     setState((prev) => ({ ...prev, isLoading: true }));
     try {
       const data = isPublic
-        ? await agentService.getAllPublicAgents()
-        : await agentService.getAllAgents();
+        ? await agentService.getAllPublicAgents(true)
+        : await agentService.getAllAgents(true);
       setState({ data, isLoading: false, error: null });
     } catch (error) {
       setState({

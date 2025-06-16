@@ -9,6 +9,7 @@ import { Wallet, BellIcon as BrandTelegram, Loader2 } from 'lucide-react';
 import SafeImage from '@/components/safe-image';
 import { z } from 'zod';
 import SocialAuth from "@/components/auth/social-auth";
+import { useModalStore } from '@/lib/stores/modalStore';
 
 // Schema для валидации с помощью zod
 const loginSchema = z.object({
@@ -24,7 +25,7 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [formErrors, setFormErrors] = useState<Partial<LoginFormValues>>({});
     const [mode, setMode] = useState<'login' | 'signup' | 'wallet' | 'telegram'>('login');
-
+    const { closeModal } = useModalStore((state) => state);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -51,6 +52,7 @@ export default function LoginPage() {
 
         try {
             await login(email, password);
+            closeModal();
         } catch (err) {
             setError('Login failed. Please check your credentials.');
         } finally {

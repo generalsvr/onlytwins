@@ -1,6 +1,6 @@
 // app/api/auth/[...path]/route.ts
 import { NextResponse } from 'next/server';
-import { privateApi } from '@/lib/privateApi';
+import { clientApi } from '@/lib/clientApi';
 
 const EXTERNAL_API_URL = 'https://platform.onlytwins.ai/api/v1';
 
@@ -14,7 +14,7 @@ export async function GET(
   const path = resolvedParams.path.join('/');
   const url = `${EXTERNAL_API_URL}/${path}${Object.keys(qParams).length ? '/' : ''}`;
   try {
-    const response = await privateApi.get(url, {
+    const response = await clientApi.get(url, {
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -48,7 +48,7 @@ export async function POST(
     token: request.headers.get('Authorization'),
   });
   try {
-    const response = await privateApi.post(url, body, {
+    const response = await clientApi.post(url, body, {
       headers: {},
     });
 
@@ -76,7 +76,7 @@ export async function PUT(
   const body = await request.json();
   const authToken = request.headers.get('Authorization');
   try {
-    const response = await privateApi.put(url, body, {
+    const response = await clientApi.put(url, body, {
       headers: {},
     });
 
@@ -105,7 +105,7 @@ export async function PATCH(
   const body = await request.json();
 
   try {
-    const response = await privateApi.patch(url, body, {
+    const response = await clientApi.patch(url, body, {
       headers: {
       },
     });

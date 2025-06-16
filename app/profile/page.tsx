@@ -25,12 +25,18 @@ import SubscriptionSection from '@/components/profile/subscription-section';
 import { useAuthStore } from '@/lib/stores/authStore';
 import AudioRecorder from '@/components/ui/audio-recorder';
 import useWindowSize from '@/lib/hooks/useWindowSize';
+import { useLoadingStore } from '@/lib/stores/useLoadingStore';
+import { router } from 'next/client';
+import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
   const { user, logout } = useAuthStore();
+  const setLoading = useLoadingStore(state => state.setLoading)
   const [activeSection, setActiveSection] = useState<string>('main');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { isMobile } = useWindowSize();
+  const router = useRouter()
+
   // Sample stats
   const stats = [
     { label: 'Characters', value: '4' },
@@ -47,14 +53,16 @@ export default function ProfilePage() {
     setActiveSection('main');
   };
 
-  const handleLogout = () => {
-    setShowLogoutConfirm(true);
+  const handleLogout = async () => {
+    setLoading(true)
+      await logout().then(() => {
+        router.push('/');
+        setLoading(false)
+      })
+
   };
 
-  const confirmLogout = () => {
-    logout();
-    setShowLogoutConfirm(false);
-  };
+
 
   // Render the appropriate section based on activeSection state
   const renderSection = () => {
