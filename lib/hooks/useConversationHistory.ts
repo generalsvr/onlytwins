@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { chatService } from '@/lib/services/v1/chat';
 import { ChatMessage } from '@/lib/types/chat';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { conversationService } from '@/lib/services/v1/conversations';
 
 interface UseConversationsResult {
   history: ChatMessage[];
@@ -22,7 +22,7 @@ export const useConversationHistory = (
     try {
       setIsLoading(true);
       setError(null);
-      const data = await chatService.getConversationHistory(conversationId);
+      const data = await conversationService.getConversationHistory(conversationId);
       setHistory(data);
     } catch (err) {
       setError(

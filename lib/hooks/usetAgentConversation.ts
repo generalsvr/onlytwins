@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { chatService } from '@/lib/services/v1/chat';
 import { ConversationSummary } from '@/lib/types/chat';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { conversationService } from '@/lib/services/v1/conversations';
 
 interface UseConversationsResult {
   conversations: ConversationSummary | undefined;
@@ -22,7 +22,7 @@ export const useAgentConversation = (
     try {
       setIsLoading(true);
       setError(null);
-      const data = await chatService.getAgentConversations(agentId);
+      const data = await conversationService.getAgentConversations(agentId);
       data.sort(
         (a, b) =>
           new Date(b.lastActivity).getTime() -

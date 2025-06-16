@@ -1,12 +1,7 @@
-import { cookies } from 'next/headers';
-import { authServerService } from '@/lib/ssr/auth-ssr';
-import { UserResponse } from '@/lib/types/auth';
 import useAuthServerState from '@/lib/hooks/ssr/useAuthServerState';
-import { chatService } from '@/lib/services/v1/chat';
-import { serverChatService } from '@/lib/services/v1/ssr/chat';
 import { ConversationSummary } from '@/lib/types/chat';
 import { cache } from 'react';
-import { serverAgentService } from '@/lib/services/v1/ssr/agent';
+import { serverConversationsService } from '@/lib/services/v1/ssr/conversations';
 
 interface ServerConversationsResponse {
   conversations: ConversationSummary[] | null;
@@ -23,7 +18,7 @@ export const getConversationsSSR = cache(
           error: null,
         };
       }
-      const data = await serverChatService.getUserConversations(
+      const data = await serverConversationsService.getUserConversations(
         authState?.user?.id
       );
       const uniqueConversations = data.reduce((acc, current) => {

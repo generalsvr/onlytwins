@@ -1,11 +1,11 @@
 import { ChatMessage, ConversationSummary } from '@/lib/types/chat';
 import { serverApi } from '@/lib/serverApi';
 
-export const serverChatService = {
+export const serverConversationsService = {
   // Get conversation history
   async getConversationHistory(conversationId: string): Promise<ChatMessage[]> {
     const response = await serverApi.get<ChatMessage[]>(
-      `/chat/conversations/${conversationId}`
+      `/conversations/${conversationId}/messages`
     );
     return response.data;
   },
@@ -13,7 +13,7 @@ export const serverChatService = {
   // Get agent conversations
   async getAgentConversations(agentId: number): Promise<ConversationSummary[]> {
     const response = await serverApi.get<ConversationSummary[]>(
-      `/chat/agents/${agentId}/conversations`
+      `/conversations/agents/${agentId}`
     );
     return response.data;
   },
@@ -24,7 +24,7 @@ export const serverChatService = {
     agentId?: number
   ): Promise<ConversationSummary[]> {
     const response = await serverApi.get<ConversationSummary[]>(
-      `/chat/users/${userId}/conversations`,
+      `/conversations/users/${userId}`,
       {
         params: {
           ...(agentId && { agent_id: agentId }),

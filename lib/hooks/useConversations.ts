@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { chatService } from '@/lib/services/v1/chat';
 import { ConversationSummary } from '@/lib/types/chat';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { conversationService } from '@/lib/services/v1/conversations';
 
 interface UseConversationsResult {
   conversations: ConversationSummary[];
@@ -23,7 +23,7 @@ export const useConversations = (
     try {
       setIsLoading(true);
       setError(null);
-      const data = await chatService.getUserConversations(userId, agentId);
+      const data = await conversationService.getUserConversations(userId, agentId);
       const uniqueConversations = data.reduce((acc, current) => {
         const existing = acc.find(
           (item) => item.agent.id === current.agent.id
