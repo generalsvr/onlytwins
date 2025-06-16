@@ -4,7 +4,7 @@ import humps from 'humps';
 import { cookies } from 'next/headers';
 
 const serverApi: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: `${process.env.NEXT_PUBLIC_HOST_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
