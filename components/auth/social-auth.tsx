@@ -111,7 +111,7 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
         <div className={'max-w-max h-full'}>
           <TelegramLoginButton
               onAuthCallback={(data) => processTelegramAuth(data)}
-              botUsername={'onlytwins_app_bot'}
+              botUsername={'onlytwins_chat_bot'}
               buttonSize="large" // "large" | "medium" | "small"
               cornerRadius={5} // 0 - 20
               showAvatar={false} // true | false
