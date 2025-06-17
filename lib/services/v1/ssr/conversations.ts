@@ -5,7 +5,7 @@ export const serverConversationsService = {
   // Get conversation history
   async getConversationHistory(conversationId: string): Promise<ChatMessage[]> {
     const response = await serverApi.get<ChatMessage[]>(
-      `/conversations/${conversationId}/messages`
+      `/conversations/${conversationId}`
     );
     return response.data;
   },

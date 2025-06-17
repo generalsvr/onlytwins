@@ -45,7 +45,7 @@ export default function ClientLayout({
   const { isMobile } = useWindowSize();
   const [signUpPopupShow, setSignUpPopupShow] = useState(true);
   const { setToastNotification } = useNotificationStore();
-
+  const isChatPage = pathname && pathname.includes('/chat/');
   // Инициализация состояния из серверных данных
   useEffect(() => {
     const initializeAuth = async () => {
@@ -112,24 +112,29 @@ export default function ClientLayout({
         <AuthProvider>
           <div
             className={
-              isMobile
-                ? `w-full h-full ${pathname.includes('chat') && 'overflow-hidden'}`
-                : 'mx-auto max-w-[1440px] pt-6 px-4'
+              isChatPage
+                ? 'mx-auto max-w-[1440px]'
+                : isMobile
+                  ? `w-full h-full ${pathname.includes('chat') && 'overflow-hidden'}`
+                  : 'mx-auto max-w-[1440px] pt-6 px-4'
             }
           >
             <A11ySkipLink />
-            <Header />
+            {!isChatPage && <Header />}
+
             <Loader />
             <div
               className={
-                isMobile
-                  ? `pt-2 ${!pathname.includes('chat') && 'pb-20'}`
-                  : 'pt-12'
+                isChatPage
+                  ? ''
+                  : isMobile
+                    ? `pt-2 ${!pathname.includes('chat') && 'pb-20'}`
+                    : 'pt-12'
               }
             >
               {children}
             </div>
-            <MainNavigation />
+            {isMobile && isChatPage ? <></> : <MainNavigation />}
 
             {!isAuthenticated && signUpPopupShow && (
               <div

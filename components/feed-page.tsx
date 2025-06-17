@@ -8,6 +8,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import Button from '@/components/button';
 import { RotateCcw } from 'lucide-react';
 import { AgentResponse } from '@/lib/types/agents';
+import AgentCard from '@/components/full-screen-feed';
 
 
 
@@ -55,7 +56,7 @@ export default function FeedPage({ agents }: FeedPageProps) {
     <div className="relative h-screen w-full">
       {isMobile ? (
         // Mobile view - Full screen feed with no header padding
-        <FullScreenFeed characters={agents} />
+        <AgentCard agents={agents} />
       ) : (
         // Desktop view - Grid layout
         <div>

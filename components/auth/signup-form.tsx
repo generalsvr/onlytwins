@@ -5,12 +5,25 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, X } from 'lucide-react';
+import {
+  Loader2,
+  X,
+  Eye,
+  EyeOff,
+  Check,
+  AlertCircle,
+  User,
+  Mail,
+  Lock,
+  Gift,
+  Sparkles
+} from 'lucide-react';
 import { z } from 'zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthError } from '@/lib/types/auth';
 import SocialAuth from '@/components/auth/social-auth';
 import Cookies from 'js-cookie';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Define the validation schema for signup form
 const signupSchema = z.object({
@@ -51,14 +64,20 @@ interface SignupFormProps {
 
 export default function SignupForm({ onClose }: SignupFormProps) {
   const { signup, platform } = useAuthStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [repeatPassword, setRepeatPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [referralCode, setReferralCode] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    repeatPassword: '',
+    firstName: '',
+    lastName: '',
+    referralCode: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRepeatPassword, setShowRepeatPassword] = useState(false);
   const [isReferralDisabled, setIsReferralDisabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
@@ -78,26 +97,62 @@ export default function SignupForm({ onClose }: SignupFormProps) {
       const refFromCookie = Cookies.get('referral_code');
 
       if (refFromUrl) {
-        setReferralCode(refFromUrl);
+        setFormData(prev => ({ ...prev, referralCode: refFromUrl }));
         setIsReferralDisabled(true);
       } else if (refFromCookie) {
-        setReferralCode(refFromCookie);
+        setFormData(prev => ({ ...prev, referralCode: refFromCookie }));
         setIsReferralDisabled(true);
       }
     }
   }, [searchParams]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+
+    // Clear field error when user starts typing
+    if (errors[field as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleFieldFocus = (field: string) => {
+    setFocusedField(field);
+  };
+
+  const handleFieldBlur = (field: string) => {
+    setFocusedField(null);
+    setTouchedFields(prev => new Set([...prev, field]));
+  };
+
+  // Real-time validation for better UX
+  const getFieldValidation = (field: string) => {
+    if (!touchedFields.has(field)) return { isValid: null, message: '' };
+
+    try {
+      const fieldSchema = signupSchema.shape[field as keyof typeof signupSchema.shape];
+      if (field === 'repeatPassword') {
+        return {
+          isValid: formData.password === formData.repeatPassword,
+          message: formData.password !== formData.repeatPassword ? "Passwords don't match" : ''
+        };
+      }
+      fieldSchema.parse(formData[field as keyof typeof formData]);
+      return { isValid: true, message: '' };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return { isValid: false, message: error.errors[0]?.message || '' };
+      }
+      return { isValid: false, message: '' };
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
     const validation = signupSchema.safeParse({
-      email,
-      password,
-      repeatPassword,
-      firstName,
-      lastName,
-      referralCode: referralCode || undefined,
+      ...formData,
+      referralCode: formData.referralCode || undefined,
     });
 
     if (!validation.success) {
@@ -116,9 +171,9 @@ export default function SignupForm({ onClose }: SignupFormProps) {
     setIsLoading(true);
 
     try {
-      await signup(email, password, firstName, lastName);
-      if (referralCode && typeof window !== 'undefined') {
-        Cookies.set('referral_code', referralCode, { expires: 60 });
+      await signup(formData.email, formData.password, formData.firstName, formData.lastName);
+      if (formData.referralCode && typeof window !== 'undefined') {
+        Cookies.set('referral_code', formData.referralCode, { expires: 60 });
       }
       onClose();
       router.push('/profile');
@@ -156,7 +211,11 @@ export default function SignupForm({ onClose }: SignupFormProps) {
 
   if (platform === 'telegram') {
     return (
-      <div className="text-center p-4">
+      <div className="text-center p-6 bg-zinc-800/40 backdrop-blur-sm rounded-2xl border border-zinc-700/30">
+        <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Sparkles size={32} className="text-blue-400" />
+        </div>
+        <p className="text-zinc-300 text-lg font-medium mb-2">Telegram Authentication</p>
         <p className="text-zinc-400">
           Authentication is handled through Telegram on mobile devices.
         </p>
@@ -164,123 +223,263 @@ export default function SignupForm({ onClose }: SignupFormProps) {
     );
   }
 
+  const formFields = [
+    {
+      id: 'firstName',
+      label: 'First Name',
+      type: 'text',
+      placeholder: 'Enter your first name',
+      icon: User,
+      required: true,
+    },
+    {
+      id: 'lastName',
+      label: 'Last Name',
+      type: 'text',
+      placeholder: 'Enter your last name',
+      icon: User,
+      required: true,
+    },
+    {
+      id: 'email',
+      label: 'Email',
+      type: 'email',
+      placeholder: 'your@email.com',
+      icon: Mail,
+      required: true,
+    },
+    {
+      id: 'password',
+      label: 'Password',
+      type: 'password',
+      placeholder: 'Enter your password',
+      icon: Lock,
+      required: true,
+      showToggle: true,
+    },
+    {
+      id: 'repeatPassword',
+      label: 'Repeat Password',
+      type: 'password',
+      placeholder: 'Repeat your password',
+      icon: Lock,
+      required: true,
+      showToggle: true,
+    },
+    {
+      id: 'referralCode',
+      label: 'Referral Code',
+      type: 'text',
+      placeholder: 'Enter referral code (optional)',
+      icon: Gift,
+      required: false,
+    },
+  ];
+
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="your@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={isLoading}
-            className={`bg-zinc-800 border-zinc-700 ${errors.email ? 'border-red-500' : ''}`}
-          />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+    <div className="p-6">
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-pink-500/25">
+          <Sparkles size={32} className="text-white" />
         </div>
+        <h2 className="text-2xl font-bold text-white">Create Account</h2>
+        <p className="text-zinc-400">Join our community and start chatting</p>
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={isLoading}
-            className={`bg-zinc-800 border-zinc-700 ${errors.password ? 'border-red-500' : ''}`}
-          />
-          {errors.password && (
-            <p className="text-red-500 text-sm">{errors.password}</p>
+      <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        {formFields.map((field, index) => {
+          const validation = getFieldValidation(field.id);
+          const hasError = errors[field.id as keyof typeof errors] || (validation.isValid === false && validation.message);
+          const isValid = validation.isValid === true;
+          const isFocused = focusedField === field.id;
+          const isPasswordField = field.type === 'password';
+          const showPasswordValue = field.id === 'password' ? showPassword : showRepeatPassword;
+
+          return (
+            <motion.div
+              key={field.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="space-y-2"
+            >
+              <Label
+                htmlFor={field.id}
+                className={`flex items-center space-x-2 transition-colors ${
+                  isFocused ? 'text-pink-400' : 'text-zinc-300'
+                }`}
+              >
+                <field.icon size={16} />
+                <span>{field.label}</span>
+                {field.required && <span className="text-red-400">*</span>}
+              </Label>
+
+              <div className="relative">
+                <Input
+                  id={field.id}
+                  type={isPasswordField && !showPasswordValue ? 'password' : 'text'}
+                  placeholder={field.placeholder}
+                  value={formData[field.id as keyof typeof formData]}
+                  onChange={(e) => handleInputChange(field.id, e.target.value)}
+                  onFocus={() => handleFieldFocus(field.id)}
+                  onBlur={() => handleFieldBlur(field.id)}
+                  required={field.required}
+                  disabled={isLoading || (field.id === 'referralCode' && isReferralDisabled)}
+                  className={`
+                    pl-4 pr-12 py-3 bg-zinc-800/50 backdrop-blur-sm border transition-all duration-200
+                    focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50
+                    ${hasError
+                    ? 'border-red-500/50 bg-red-500/5'
+                    : isValid
+                      ? 'border-green-500/50 bg-green-500/5'
+                      : isFocused
+                        ? 'border-pink-500/50 bg-zinc-800/70'
+                        : 'border-zinc-700/50 hover:border-zinc-600/50'
+                  }
+                  `}
+                />
+
+                {/* Password toggle */}
+                {field.showToggle && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (field.id === 'password') {
+                        setShowPassword(!showPassword);
+                      } else {
+                        setShowRepeatPassword(!showRepeatPassword);
+                      }
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-zinc-200 transition-colors"
+                  >
+                    {showPasswordValue ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                )}
+
+                {/* Validation icon */}
+                {!field.showToggle && validation.isValid !== null && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    {validation.isValid ? (
+                      <Check size={18} className="text-green-500" />
+                    ) : (
+                      <AlertCircle size={18} className="text-red-500" />
+                    )}
+                  </div>
+                )}
+
+                {/* Special styling for referral code */}
+                {field.id === 'referralCode' && formData.referralCode && (
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <Gift size={18} className="text-yellow-400" />
+                  </div>
+                )}
+              </div>
+
+              {/* Error message */}
+              <AnimatePresence>
+                {hasError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center space-x-2 text-red-400 text-sm"
+                  >
+                    <AlertCircle size={14} />
+                    <span>{errors[field.id as keyof typeof errors] || validation.message}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Success message */}
+              <AnimatePresence>
+                {isValid && touchedFields.has(field.id) && !hasError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center space-x-2 text-green-400 text-sm"
+                  >
+                    <Check size={14} />
+                    <span>Looks good!</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
+        })}
+
+        {/* Server error */}
+        <AnimatePresence>
+          {errors.server && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center space-x-3"
+            >
+              <AlertCircle size={20} className="text-red-400 flex-shrink-0" />
+              <p className="text-red-400 text-sm">{errors.server}</p>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
-        <div className="space-y-2">
-          <Label htmlFor="repeatPassword">Repeat Password</Label>
-          <Input
-            id="repeatPassword"
-            type="password"
-            placeholder="Repeat your password"
-            value={repeatPassword}
-            onChange={(e) => setRepeatPassword(e.target.value)}
-            required
-            disabled={isLoading}
-            className={`bg-zinc-800 border-zinc-700 ${errors.repeatPassword ? 'border-red-500' : ''}`}
-          />
-          {errors.repeatPassword && (
-            <p className="text-red-500 text-sm">{errors.repeatPassword}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="firstName">First Name</Label>
-          <Input
-            id="firstName"
-            type="text"
-            placeholder="Enter your first name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            required
-            disabled={isLoading}
-            className={`bg-zinc-800 border-zinc-700 ${errors.firstName ? 'border-red-500' : ''}`}
-          />
-          {errors.firstName && (
-            <p className="text-red-500 text-sm">{errors.firstName}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name</Label>
-          <Input
-            id="lastName"
-            type="text"
-            placeholder="Enter your last name"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            required
-            disabled={isLoading}
-            className={`bg-zinc-800 border-zinc-700 ${errors.lastName ? 'border-red-500' : ''}`}
-          />
-          {errors.lastName && (
-            <p className="text-red-500 text-sm">{errors.lastName}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="referralCode">Referral Code (Optional)</Label>
-          <Input
-            id="referralCode"
-            type="text"
-            placeholder="Enter referral code"
-            value={referralCode}
-            onChange={(e) => setReferralCode(e.target.value)}
-            disabled={isLoading || isReferralDisabled}
-            className={`bg-zinc-800 border-zinc-700 ${errors.referralCode ? 'border-red-500' : ''}`}
-          />
-          {errors.referralCode && (
-            <p className="text-red-500 text-sm">{errors.referralCode}</p>
-          )}
-        </div>
-
-        {errors.server && (
-          <p className="text-red-500 text-sm">{errors.server}</p>
-        )}
-
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+        {/* Submit button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
         >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Continue
-        </Button>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full mt-4 py-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/25 transition-all duration-200 hover:scale-[1.02] disabled:hover:scale-100 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Creating Account...</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center space-x-2">
+                <Sparkles size={20} />
+                <span>Create Account</span>
+              </div>
+            )}
+          </Button>
+        </motion.div>
       </form>
 
-      <SocialAuth isLoading={isLoading} setErrors={setErrors} />
+      {/* Social Auth */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+      >
+        <SocialAuth isLoading={isLoading} setErrors={setErrors} />
+      </motion.div>
+
+      {/* Referral bonus info */}
+      {/*<AnimatePresence>*/}
+      {/*  {formData.referralCode && (*/}
+      {/*    <motion.div*/}
+      {/*      initial={{ opacity: 0, scale: 0.95 }}*/}
+      {/*      animate={{ opacity: 1, scale: 1 }}*/}
+      {/*      exit={{ opacity: 0, scale: 0.95 }}*/}
+      {/*      className="p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-xl"*/}
+      {/*    >*/}
+      {/*      <div className="flex items-center space-x-3">*/}
+      {/*        <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">*/}
+      {/*          <Gift size={18} className="text-yellow-400" />*/}
+      {/*        </div>*/}
+      {/*        <div>*/}
+      {/*          <p className="text-yellow-400 font-medium">Referral Bonus!</p>*/}
+      {/*          <p className="text-yellow-300/80 text-sm">You'll receive bonus tokens for using this referral code</p>*/}
+      {/*        </div>*/}
+      {/*      </div>*/}
+      {/*    </motion.div>*/}
+      {/*  )}*/}
+      {/*</AnimatePresence>*/}
     </div>
   );
 }

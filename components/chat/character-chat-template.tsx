@@ -41,24 +41,20 @@ import {
 import { uuid } from 'valibot';
 import { v4 } from 'uuid';
 import { formatDate, getCurrentTime } from '@/lib/utils';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 interface CharacterChatTemplateProps {
-  character: AgentResponse;
-  onBack: () => void;
-  isAuthenticated: boolean;
-  onAuthRequired: (mode: 'login' | 'signup') => void;
+  character: AgentResponse | null;
   conversationId?: string; // Optional conversation ID
-  history: ChatMessage[]
+  history: ChatMessage[] | null;
 }
 
 export default function CharacterChatTemplate({
   character,
-  onBack,
-  isAuthenticated,
-  onAuthRequired,
   conversationId,
   history
 }: CharacterChatTemplateProps) {
+  const { isAuthenticated } = useAuthStore(state => state)
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [showOptions, setShowOptions] = useState(false);
@@ -85,14 +81,16 @@ export default function CharacterChatTemplate({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { openModal, closeModal } = useModalStore((state) => state);
   const { isMobile, isDesktop } = useWindowSize();
+  const { openModal, closeModal } = useModalStore()
 
   // Scroll to bottom of messages
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
-
+  const onBack = () => {
+    router.push('/');
+  }
   useEffect(() => {
     if (!conversationId) return;
 
@@ -100,22 +98,22 @@ export default function CharacterChatTemplate({
   }, [conversationId]);
 
   useEffect(() => {
-    if(!history) return;
+    if (!history) return;
 
-    const preparedHistory = history.map(msg => {
+    const preparedHistory = history.map((msg) => {
       return {
-        id:String(msg.messageId),
+        id: String(msg.messageId),
         text: msg.content,
-        sender: msg.role === 'user' ? 'user' as 'user' | 'agent' : 'agent' as 'user' | 'agent',
+        sender:
+          msg.role === 'user'
+            ? ('user' as 'user' | 'agent')
+            : ('agent' as 'user' | 'agent'),
         time: formatDate(msg.timestamp),
-        image: msg.contentData
-          ? msg.contentData.url
-          : undefined,
-      }
-    })
+        image: msg.contentData ? msg.contentData.url : undefined,
+      };
+    });
 
-    setMessages(preparedHistory)
-
+    setMessages(preparedHistory);
   }, [history]);
 
   useEffect(() => {
@@ -277,10 +275,7 @@ export default function CharacterChatTemplate({
 
   // Start recording
   const startRecording = async () => {
-    if (!isAuthenticated) {
-      onAuthRequired('signup');
-      return;
-    }
+
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -383,10 +378,7 @@ export default function CharacterChatTemplate({
 
   // Send text message
   const handleSendMessage = async () => {
-    if (!isAuthenticated) {
-      onAuthRequired('signup');
-      return;
-    }
+
     if (messageText.trim() === '') return;
     const userMessageId = v4();
     setMessages((prev) => [
@@ -407,7 +399,25 @@ export default function CharacterChatTemplate({
         ...(currentConversationId && { conversationId: currentConversationId }),
       };
       setMessageText('');
-      const response = await chatService.sendMessage(chatRequest);
+
+      const response = isAuthenticated
+        ? await chatService.sendMessage(chatRequest)
+        : await chatService.sendPublicMessage(chatRequest);
+
+      if(response?.error && response?.status === 429){
+        openModal({
+          type: 'message',
+          content: (
+            <AuthModal
+              initialMode="signup"
+              onClose={() => closeModal()}
+            />
+          ),
+        })
+        setIsTyping(false)
+        return;
+      }
+
       const messageId = v4();
 
       if (response.message) {
@@ -440,10 +450,7 @@ export default function CharacterChatTemplate({
   };
 
   const handleRequestPhoto = () => {
-    if (!isAuthenticated) {
-      onAuthRequired('signup');
-      return;
-    }
+
     setShowPaywall(true);
   };
 
@@ -488,9 +495,7 @@ export default function CharacterChatTemplate({
       className={`h-screen flex ${isMobile ? 'flex-col' : 'mx-auto'} bg-black text-white`}
     >
       <div
-        className={`flex h-[100%] w-full rounded-xl overflow-hidden ${
-          isMobile && 'h-[calc(100%-64px)] overflow-hidden'
-        }`}
+        className={`flex h-[100%] w-full rounded-xl overflow-hidden`}
       >
         <div className="w-full flex flex-col">
           <ChatHeader
@@ -510,6 +515,7 @@ export default function CharacterChatTemplate({
               isTyping={isTyping}
               playingStates={playingStates}
               togglePlayPause={togglePlayPause}
+              isMobile={isMobile}
             />
           </div>
           <ChatInput
@@ -521,7 +527,7 @@ export default function CharacterChatTemplate({
             stopRecording={stopRecording}
             recordingTime={recordingTime}
             isAuthenticated={isAuthenticated}
-            onAuthRequired={onAuthRequired}
+            isMobile={isMobile}
           />
         </div>
       </div>

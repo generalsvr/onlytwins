@@ -1,66 +1,52 @@
-'use client';
-
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import { CHARACTER_CHATS } from '@/data/characters';
 import CharacterChatTemplate from '@/components/chat/character-chat-template';
-import LoadingScreen from '@/components/loading-screen';
-import { useAuth } from '@/contexts/auth-context';
+import { getConversationsHistorySSR } from '@/lib/hooks/ssr/useServerConversationHistory';
+import { getAgentSSR } from '@/lib/hooks/ssr/useServerAgent';
+import { getConversationsSSR } from '@/lib/hooks/ssr/useServerConversations';
 
-import CharacterChatTemplateSkeleton from '@/components/chat/character-chat-template-skeleton';
-import { useAgent } from '@/lib/hooks/useAgent';
-import { useAgentConversation } from '@/lib/hooks/usetAgentConversation';
-import { useConversations } from '@/lib/hooks/useConversations';
-import { useAuthStore } from '@/lib/stores/authStore';
-import { useConversationHistory } from '@/lib/hooks/useConversationHistory';
-
-export default function CharacterChatPage({
+export default async function CharacterChatPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params); // Unwrap params with React.use()
-  const { user, isAuthenticated } = useAuthStore((state) => state);
-  const { data: character, isLoading: loading } = useAgent(Number(id));
-  const { isLoading: convLoading, conversations } = useConversations(
-    Number(user?.id || null),
-    Number(id)
-  );
-  const router = useRouter();
-  const [lastConv] = conversations;
+  const { id } = await params;
 
-  const { history, isLoading: historyLoading } = useConversationHistory(
-    lastConv?.conversationId || null
-  );
+  try {
+    // Получаем базовые данные параллельно
+    const [data, conversationsResult] = await Promise.all([
+      getAgentSSR(Number(id)),
+      getConversationsSSR(Number(id)),
+    ]);
 
-  const handleBack = () => {
-    router.push('/');
-  };
+    const { conversations } = conversationsResult;
 
-  const handleAuthRequired = (mode: 'login' | 'signup') => {
-    // Redirect to login/signup page or show modal
-    router.push(`/?auth=${mode}`);
-  };
+    // Проверяем, что conversations получены
+    if (!conversations || conversations.length === 0) {
+      return (
+        <CharacterChatTemplate
+          conversationId=""
+          history={[]}
+          character={data.data}
+        />
+      );
+    }
 
-  console.log({
-    loading:loading,
-    character:character,
-    convLoading: convLoading,
-    historyLoading: historyLoading
-  })
+    const [lastConv] = conversations;
 
-  if (loading || !character || convLoading || historyLoading) {
-    return <CharacterChatTemplateSkeleton />;
+    // Получаем историю только если есть conversationId
+    const { history } = lastConv?.conversationId
+      ? await getConversationsHistorySSR(lastConv.conversationId)
+      : { history: [] };
+
+    return (
+      <CharacterChatTemplate
+        conversationId={lastConv?.conversationId || ''}
+        history={history}
+        character={data.data}
+      />
+    );
+  } catch (error) {
+    console.error('Error loading chat data:', error);
+    // Обработка ошибки или редирект
+    throw error;
   }
-
-  return (
-    <CharacterChatTemplate
-      conversationId={lastConv?.conversationId || ''}
-      history={history}
-      character={character}
-      onBack={handleBack}
-      isAuthenticated={isAuthenticated}
-      onAuthRequired={handleAuthRequired}
-    />
-  );
 }

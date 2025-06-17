@@ -8,7 +8,7 @@ interface ServerConversationsResponse {
   error: Error | null;
 }
 export const getConversationsSSR = cache(
-  async (): Promise<ServerConversationsResponse> => {
+  async (agentId: number | undefined): Promise<ServerConversationsResponse> => {
     try {
       const authState = await useAuthServerState();
 
@@ -19,12 +19,11 @@ export const getConversationsSSR = cache(
         };
       }
       const data = await serverConversationsService.getUserConversations(
-        authState?.user?.id
+        authState?.user?.id,
+        agentId
       );
       const uniqueConversations = data.reduce((acc, current) => {
-        const existing = acc.find(
-          (item) => item.agent.id === current.agent.id
-        );
+        const existing = acc.find((item) => item.agent.id === current.agent.id);
         if (!existing) {
           acc.push(current);
         }

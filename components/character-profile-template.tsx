@@ -57,7 +57,7 @@ export interface CharacterProfileData {
 }
 
 interface CharacterProfileTemplateProps {
-  character: AgentResponse
+  character: AgentResponse | null
 }
 
 export default function CharacterProfileTemplate({

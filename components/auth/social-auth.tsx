@@ -78,18 +78,18 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
 
   return (
     <>
-      <div className="relative">
+      <div className="relative mt-4">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t border-zinc-700" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-zinc-900 px-2 text-zinc-400">
+          <span className="px-2 text-zinc-400">
             Or continue with
           </span>
         </div>
       </div>
 
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-4 mt-4">
         {/*<Button*/}
         {/*  variant="outline"*/}
         {/*  onClick={handleGoogleSignup}*/}

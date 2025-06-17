@@ -30,7 +30,7 @@ export async function GET(request: Request, { params }: { params: { path: string
     }
 
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: Error) {
     console.error('Actual Request URL:', url);
     console.error('API Error:', {
       message: error.message,
@@ -107,11 +107,12 @@ export async function PUT(request: Request, { params }: { params: { path: string
       console.error('API Error:', {
         status: response.status,
         data: data,
-        detail: data?.error?.details
+        detail: data?.error?.details,
+        message:data?.error?.message
       });
 
       return NextResponse.json(
-        { error: data?.message || 'Request failed' },
+        { error: data?.error?.message || 'Request failed', status:response.status },
         { status: response.status }
       );
     }
@@ -121,11 +122,7 @@ export async function PUT(request: Request, { params }: { params: { path: string
     console.error('API Error:', {
       message: error.message,
     });
-
-    return NextResponse.json(
-      { error: error.message || 'Request failed' },
-      { status: 500 }
-    );
+    return NextResponse.json(error);
   }
 }
 

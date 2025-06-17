@@ -15,7 +15,7 @@ export default function Modal() {
   }, []);
 
   useEffect(() => {
-    console.log(isOpen)
+    console.log(isOpen);
     if (isOpen) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = '';
     return () => {
@@ -24,9 +24,10 @@ export default function Modal() {
   }, [isOpen]);
   useEffect(() => {
     if (!isOpen) return;
-    const handleClickOutside = (event) => { console.log('123')
+    const handleClickOutside = (event) => {
+      console.log('123');
       if (modelRef.current && !modelRef.current.contains(event.target)) {
-        console.log('343')
+        console.log('343');
         closeModal(); // Закрытие модалки
       }
     };
@@ -38,12 +39,8 @@ export default function Modal() {
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div
-
-      className=" fixed w-screen h-screen inset-0 z-50 flex items-center justify-center bg-black/50"
-
-    >
-      <div  ref={modelRef} className="bg-zinc-900 rounded-2xl p-6 min-w-[320px] max-w-full relative shadow-2xl ">
+    <div className=" fixed w-screen h-screen inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div ref={modelRef} className=" min-w-[320px] ">
         <button className="absolute top-4 right-4" onClick={closeModal}>
           ✕
         </button>

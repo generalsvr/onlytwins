@@ -48,6 +48,7 @@ clientApi.interceptors.response.use(
     if (response.data) {
       response.data = humps.camelizeKeys(response.data);
     }
+    console.log(response)
     return response;
   },
   async (error: AxiosError) => {

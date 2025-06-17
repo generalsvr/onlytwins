@@ -1,4 +1,5 @@
 import { AgentResponse } from '@/lib/types/agents';
+import { Request } from '@/lib/types/common';
 
 export interface ChatRequest {
   agentId: number;
@@ -34,7 +35,7 @@ export interface Message {
   image?: string;
 }
 
-export interface ChatResponse {
+export interface ChatResponse extends Request {
   message: string;
   agentId: number;
   conversationId: string;

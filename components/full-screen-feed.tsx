@@ -1,683 +1,372 @@
 'use client';
 
-import type React from 'react';
-
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
-import SafeImage from './safe-image';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import {
+  MessageCircle,
+  Heart,
+  Share,
+  MapPin,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Star,
+  Info
+} from 'lucide-react';
+import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import SafeImage from '@/components/safe-image';
 import { AgentResponse } from '@/lib/types/agents';
 
-interface FullScreenFeedProps {
-  characters: AgentResponse[] | null;
+
+
+interface AgentCardProps {
+  agents: AgentResponse[];
 }
 
-export default function FullScreenFeed({ characters }: FullScreenFeedProps) {
-  const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
-  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
-  const [likedCharacters, setLikedCharacters] = useState<number[]>([]);
-  const [direction, setDirection] = useState(0);
-  const [horizontalDirection, setHorizontalDirection] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
-  const [videoError, setVideoError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showSwipeHint, setShowSwipeHint] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isVerticalSwiping, setIsVerticalSwiping] = useState(false);
-  const [swipeProgress, setSwipeProgress] = useState(0);
-  const [dragStartY, setDragStartY] = useState(0);
-  const [dragEndY, setDragEndY] = useState(0);
-  const [isPullingToRefresh, setIsPullingToRefresh] = useState(false);
-  const [pullProgress, setPullProgress] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const swipeThreshold = 30;
-  const pullThreshold = 80;
+export default function AgentCard({ agents }: AgentCardProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showInfo, setShowInfo] = useState(false);
+  const [liked, setLiked] = useState<Set<number>>(new Set());
   const router = useRouter();
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setIsLoading(false);
+  const y = useMotionValue(0);
+  const opacity = useTransform(y, [-200, 0, 200], [0.5, 1, 0.5]);
+  const scale = useTransform(y, [-200, 0, 200], [0.9, 1, 0.9]);
 
-    const hasSeenHint = localStorage.getItem('hasSeenSwipeHint');
-    if (!hasSeenHint) {
-      setShowSwipeHint(true);
-      setTimeout(() => {
-        setShowSwipeHint(false);
-        localStorage.setItem('hasSeenSwipeHint', 'true');
-      }, 3000);
+  // Memoized current agent to prevent unnecessary re-renders
+  const currentAgent = useMemo(() => agents[currentIndex], [agents, currentIndex]);
+
+  // Mock multiple images for demo (in real app, get from publicContent or similar)
+  const currentImages = useMemo(() => {
+    const images = [currentAgent?.meta.profileImage];
+    // Add more images from publicContent if available
+    if (currentAgent?.meta.publicContent) {
+      images.push(...currentAgent.meta.publicContent.filter(item => item.type === 'image'));
     }
+    return images.filter(Boolean);
+  }, [currentAgent]);
+
+  const handleVerticalSwipe = useCallback((info: PanInfo) => {
+    const threshold = 100;
+    const velocity = info.velocity.y;
+    const offset = info.offset.y;
+
+    if (Math.abs(velocity) > 500 || Math.abs(offset) > threshold) {
+      if (offset > 0 && currentIndex > 0) {
+        // Swipe down - previous agent
+        setCurrentIndex(prev => prev - 1);
+        setCurrentImageIndex(0);
+      } else if (offset < 0 && currentIndex < agents.length - 1) {
+        // Swipe up - next agent
+        setCurrentIndex(prev => prev + 1);
+        setCurrentImageIndex(0);
+      }
+    }
+    y.set(0);
+  }, [currentIndex, agents.length, y]);
+
+  const handleHorizontalSwipe = useCallback((info: PanInfo) => {
+    const threshold = 50;
+    const offset = info.offset.x;
+
+    if (Math.abs(offset) > threshold && currentImages.length > 1) {
+      if (offset > 0 && currentImageIndex > 0) {
+        // Swipe right - previous image
+        setCurrentImageIndex(prev => prev - 1);
+      } else if (offset < 0 && currentImageIndex < currentImages.length - 1) {
+        // Swipe left - next image
+        setCurrentImageIndex(prev => prev + 1);
+      }
+    }
+  }, [currentImageIndex, currentImages.length]);
+
+  const handlePanEnd = useCallback((event: any, info: PanInfo) => {
+    const isVertical = Math.abs(info.offset.y) > Math.abs(info.offset.x);
+
+    if (isVertical) {
+      handleVerticalSwipe(info);
+    } else {
+      handleHorizontalSwipe(info);
+    }
+  }, [handleVerticalSwipe, handleHorizontalSwipe]);
+
+  const handleLike = useCallback((agentId: number) => {
+    setLiked(prev => {
+      const newLiked = new Set(prev);
+      if (newLiked.has(agentId)) {
+        newLiked.delete(agentId);
+      } else {
+        newLiked.add(agentId);
+      }
+      return newLiked;
+    });
   }, []);
 
-  useEffect(() => {
-    if (characters && currentCharacterIndex >= characters.length) {
-      setCurrentCharacterIndex(0);
-    }
-  }, [characters, currentCharacterIndex]);
+  const handleChatPress = useCallback(() => {
+    router.push(`/chat/${currentAgent.id}`);
+  }, [router, currentAgent.id]);
 
-  const currentCharacter = characters?.[currentCharacterIndex];
+  if (!currentAgent) return null;
 
-  useEffect(() => {
-    if (currentCharacter) {
-      if (!currentCharacter.meta.profileImage) {
-        const characterWithImage = characters.findIndex(
-          (char) => char.meta.profileImage
-        );
-        if (
-          characterWithImage !== -1 &&
-          characterWithImage !== currentCharacterIndex
-        ) {
-          setCurrentCharacterIndex(characterWithImage);
-        }
-      } else if (
-        currentMediaIndex >= (currentCharacter.meta.profileImage ? 1 : 0)
-      ) {
-        setCurrentMediaIndex(0);
-      }
-
-      if (currentCharacter.meta.profileVideo) {
-        setIsPlaying(true);
-      }
-    }
-  }, [characters, currentCharacter, currentMediaIndex, currentCharacterIndex]);
-
-  const currentMedia = currentCharacter?.meta.profileImage
-    ? { type: 'image' as const, src: currentCharacter.meta.profileImage }
-    : currentCharacter?.meta.profileVideo
-      ? { type: 'video' as const, src: currentCharacter.meta.profileVideo }
-      : null;
-
-  useEffect(() => {
-    setCurrentMediaIndex(0);
-    setIsPlaying(true);
-    setVideoError(false);
-    setSwipeProgress(0);
-  }, [currentCharacterIndex]);
-
-  useEffect(() => {
-    if (currentMedia?.type === 'video' && videoRef.current && !videoError) {
-      if (isPlaying) {
-        videoRef.current.play().catch((err) => {
-          console.error('Error playing video:', err);
-          setIsPlaying(false);
-          setVideoError(true);
-        });
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [currentMedia, isPlaying, currentMediaIndex, videoError]);
-
-  useEffect(() => {
-    const nextIndex = (currentCharacterIndex + 1) % characters!.length;
-    const nextCharacter = characters![nextIndex];
-
-    if (nextCharacter?.meta.profileImage) {
-      const img = new Image();
-      img.src = nextCharacter.meta.profileImage;
-    }
-  }, [currentCharacterIndex, characters]);
-
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setCurrentCharacterIndex(0);
-      setCurrentMediaIndex(0);
-      const shuffledCharacters = [...characters!].sort(
-        () => Math.random() - 0.5
-      );
-      setIsRefreshing(false);
-      setPullProgress(0);
-      setIsPullingToRefresh(false);
-      console.log('Feed refreshed successfully');
-      if (navigator.vibrate) {
-        navigator.vibrate(200);
-      }
-    }, 1500);
-  }, [characters]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        setDragStartY(e.touches[0].clientY);
-        setIsPullingToRefresh(false);
-        setPullProgress(0);
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 1 && !isRefreshing) {
-        const currentY = e.touches[0].clientY;
-        const deltaY = currentY - dragStartY;
-        const isAtTop = container.scrollTop <= 0;
-
-        if (isAtTop && deltaY > 0) {
-          setIsPullingToRefresh(true);
-          const progress = Math.min(deltaY / pullThreshold, 1);
-          setPullProgress(progress);
-          e.preventDefault();
-        } else if (Math.abs(deltaY) > 20) {
-          setIsVerticalSwiping(true);
-          const progress = Math.min(Math.abs(deltaY) / 300, 1);
-          setSwipeProgress(progress);
-        }
-      }
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (e.changedTouches.length === 1 && !isRefreshing) {
-        const endY = e.changedTouches[0].clientY;
-        setDragEndY(endY);
-        const deltaY = endY - dragStartY;
-
-        if (isPullingToRefresh && deltaY >= pullThreshold) {
-          handleRefresh();
-        } else if (Math.abs(deltaY) > swipeThreshold && !isPullingToRefresh) {
-          if (deltaY < 0) {
-            handleNextCharacter();
-          } else {
-            handlePrevCharacter();
-          }
-        }
-
-        if (!isRefreshing) {
-          setTimeout(() => {
-            setIsVerticalSwiping(false);
-            setSwipeProgress(0);
-            if (!deltaY || deltaY < pullThreshold) {
-              setIsPullingToRefresh(false);
-              setPullProgress(0);
-            }
-          }, 100);
-        }
-      }
-    };
-
-    container.addEventListener('touchstart', handleTouchStart, {
-      passive: false,
-    });
-    container.addEventListener('touchmove', handleTouchMove, {
-      passive: false,
-    });
-    container.addEventListener('touchend', handleTouchEnd, { passive: false });
-
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [
-    dragStartY,
-    swipeThreshold,
-    pullThreshold,
-    isPullingToRefresh,
-    isRefreshing,
-    handleRefresh,
-  ]);
-
-  const handleNextCharacter = () => {
-    setDirection(1);
-    setCurrentCharacterIndex((prev) => (prev + 1) % characters!.length);
-  };
-
-  const handlePrevCharacter = () => {
-    setDirection(-1);
-    setCurrentCharacterIndex(
-      (prev) => (prev - 1 + characters!.length) % characters!.length
-    );
-  };
-
-  const handleMediaTap = (e: React.MouseEvent) => {
-    if (isDragging) return;
-
-    const { clientX, currentTarget } = e;
-    const { left, width } = currentTarget.getBoundingClientRect();
-    const tapPosition = clientX - left;
-
-    if (
-      currentCharacter?.meta.profileVideo ||
-      currentCharacter?.meta.profileImage
-    ) {
-      if (tapPosition < width / 2) {
-        handlePrevMedia();
-      } else {
-        handleNextMedia();
-      }
-    }
-  };
-
-  const handleNextMedia = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    if (
-      (currentCharacter?.meta.profileImage ? 1 : 0) +
-        (currentCharacter?.meta.profileVideo ? 1 : 0) >
-      1
-    ) {
-      setHorizontalDirection(1);
-      setCurrentMediaIndex((prev) => (prev + 1) % 2);
-      setVideoError(false);
-    }
-  };
-
-  const handlePrevMedia = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    if (
-      (currentCharacter?.meta.profileImage ? 1 : 0) +
-        (currentCharacter?.meta.profileVideo ? 1 : 0) >
-      1
-    ) {
-      setHorizontalDirection(-1);
-      setCurrentMediaIndex((prev) => (prev - 1 + 2) % 2);
-      setVideoError(false);
-    }
-  };
-
-  const handleDragStart = () => {
-    setIsDragging(true);
-    setIsVerticalSwiping(false);
-    setSwipeProgress(0);
-  };
-
-  const handleDrag = (
-    event: MouseEvent | TouchEvent | PointerEvent,
-    info: PanInfo
-  ) => {
-    if (
-      Math.abs(info.offset.y) > Math.abs(info.offset.x) &&
-      Math.abs(info.offset.y) > 20
-    ) {
-      setIsVerticalSwiping(true);
-      const progress = Math.min(Math.abs(info.offset.y) / 300, 1);
-      setSwipeProgress(progress);
-    }
-  };
-
-  const handleDragEnd = (
-    event: MouseEvent | TouchEvent | PointerEvent,
-    info: PanInfo
-  ) => {
-    setTimeout(() => {
-      setIsDragging(false);
-      setIsVerticalSwiping(false);
-      setSwipeProgress(0);
-    }, 100);
-
-    if (
-      Math.abs(info.offset.y) > Math.abs(info.offset.x) &&
-      Math.abs(info.offset.y) > swipeThreshold
-    ) {
-      if (info.offset.y < 0) {
-        handleNextCharacter();
-      } else {
-        handlePrevCharacter();
-      }
-    } else if (
-      Math.abs(info.offset.x) > Math.abs(info.offset.y) &&
-      Math.abs(info.offset.x) > swipeThreshold
-    ) {
-      const mediaCount =
-        (currentCharacter?.meta.profileImage ? 1 : 0) +
-        (currentCharacter?.meta.profileVideo ? 1 : 0);
-      if (mediaCount > 1) {
-        if (info.offset.x < 0) {
-          handleNextMedia();
-        } else {
-          handlePrevMedia();
-        }
-      }
-    }
-  };
-
-  const handleLike = (e: React.MouseEvent, characterId: number | undefined) => {
-    if (!characterId) return;
-    e.stopPropagation();
-    e.preventDefault();
-
-    setLikedCharacters((prevLiked) =>
-      prevLiked.includes(characterId)
-        ? prevLiked.filter((id) => id !== characterId)
-        : [...prevLiked, characterId]
-    );
-  };
-
-  const handleChatClick = (
-    e: React.MouseEvent,
-    characterId: number | undefined
-  ) => {
-    if (!characterId) return;
-    e.stopPropagation();
-    e.preventDefault();
-
-    // Placeholder for chat navigation
-    console.log('Chat clicked for character:', characterId);
-  };
-
-  const handleProfileClick = (
-    e: React.MouseEvent,
-    characterId: number | undefined
-  ) => {
-    if (!characterId) return;
-    e.stopPropagation();
-    e.preventDefault();
-
-    const character = characters!.find((c) => c.id === characterId);
-    if (character) {
-      router.push(`/character/${character.id}`);
-    }
-  };
-
-  const handleVideoEnded = () => {
-    setIsPlaying(false);
-  };
-
-  const handleVideoError = () => {
-    console.error(`Failed to load video: ${currentMedia?.src}`);
-    setVideoError(true);
-    setIsPlaying(false);
-    if (currentCharacter?.meta.profileImage) {
-      setCurrentMediaIndex(0);
-    }
-  };
-
-  const showVideoControls = currentMedia?.type === 'video' && !videoError;
-  const shouldShowPoster =
-    currentMedia?.type === 'video' && !currentCharacter?.meta.profileImage;
-
-  if (!characters || characters.length === 0) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <p className="text-white text-xl">No characters available</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
-
-  const hasMultipleMedia = !!(
-    currentCharacter?.meta.profileImage && currentCharacter.meta.profileVideo
-  );
-  console.log(currentCharacter);
-  console.log(currentMedia);
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden" ref={containerRef}>
-      <div
-        className={`absolute top-0 left-0 right-0 flex justify-center items-center transition-transform duration-300 z-50 ${
-          isPullingToRefresh || isRefreshing ? 'opacity-100' : 'opacity-0'
-        }`}
-        style={{
-          transform: `translateY(${isPullingToRefresh || isRefreshing ? Math.min(pullProgress * 60, 60) : 0}px)`,
-          height: '60px',
-        }}
+    <div className="fixed inset-0 bg-black overflow-hidden h-[calc(100vh-64px)] ">
+      <motion.div
+        className="relative w-full h-full"
+        style={{ y, opacity, scale }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.2}
+        onPanEnd={handlePanEnd}
       >
-        <div className="bg-black/40 backdrop-blur-sm rounded-full p-3 flex items-center justify-center">
-          {isRefreshing ? (
-            <RefreshCw size={24} className="text-white animate-spin" />
-          ) : (
-            <RefreshCw
-              size={24}
-              className="text-white transition-transform duration-300"
-              style={{
-                transform: `rotate(${pullProgress * 360}deg)`,
-                opacity: pullProgress,
-              }}
-            />
-          )}
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src={`${process.env.NEXT_PUBLIC_MEDIA_URL}/${currentImages[currentImageIndex]}`}
+            alt={currentAgent.name}
+            className="object-cover w-full h-full"
+          />
+          {/* Gradient overlays */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
         </div>
-        <span className="ml-2 text-white text-sm">
-          {isRefreshing
-            ? 'Refreshing...'
-            : pullProgress >= 1
-              ? 'Release to refresh'
-              : 'Pull to refresh'}
-        </span>
-      </div>
 
-      <AnimatePresence initial={false} custom={direction} mode="wait">
-        <motion.div
-          key={currentCharacterIndex}
-          custom={direction}
-          initial={{ y: direction > 0 ? '100%' : '-100%', opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: direction > 0 ? '-100%' : '100%', opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 1 }}
-          className="absolute inset-0"
-        >
-          <div className="relative h-screen w-full overflow-hidden">
-            <motion.div
-              className="absolute inset-0"
-              onClick={handleMediaTap}
-              drag={true}
-              dragConstraints={{ top: 0, bottom: 0, left: 0, right: 0 }}
-              dragElastic={0.7}
-              onDragStart={handleDragStart}
-              onDrag={handleDrag}
-              onDragEnd={handleDragEnd}
+        {/* Image indicators */}
+        {currentImages.length > 1 && (
+          <div className="absolute top-16 left-4 right-4 flex space-x-1 z-20">
+            {currentImages.map((_, index) => (
+              <div
+                key={index}
+                className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                  index === currentImageIndex
+                    ? 'bg-white'
+                    : 'bg-white/30'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Top UI */}
+        <div className="absolute top-0 left-0 right-0 pt-12 px-4 z-30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-white text-sm font-medium">Online</span>
+            </div>
+            <button
+              onClick={() => setShowInfo(!showInfo)}
+              className="p-2 rounded-full bg-black/30 backdrop-blur-sm"
             >
-              <AnimatePresence initial={false} mode="wait">
-                <motion.div
-                  key={`${currentCharacterIndex}-${currentMediaIndex}`}
-                  initial={{ opacity: 0, x: horizontalDirection * 100 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: horizontalDirection * -100 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute inset-0"
-                >
-                  {!currentMedia ||
-                  currentMedia.type === 'image' ||
-                  videoError ? (
-                    <img
-                      src={
-                        `${process.env.NEXT_PUBLIC_MEDIA_URL}/${currentMedia?.src}` ||
-                        '/claire-profile.png'
-                      }
-                      className={'w-full h-full object-cover'}
-                    />
-                  ) : (
-                    <div className="relative h-full w-full">
-                      {shouldShowPoster && (
-                        <div className="absolute inset-0 z-0">
-                          <img
-                            src="/claire-profile.png"
-                            alt={currentCharacter?.name}
-                          />
-                        </div>
-                      )}
-                      {/* <video
-                        ref={videoRef}
-                        src={currentMedia.src}
-                        className="h-full w-full object-cover relative z-10"
-                        playsInline
-                        loop
-                        muted={isMuted}
-                        onEnded={handleVideoEnded}
-                        onError={handleVideoError}
-                        preload="auto"
-                        crossOrigin="anonymous"
-                        autoPlay
-                      /> */}
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </motion.div>
+              <Info size={20} className="text-white" />
+            </button>
+          </div>
+        </div>
 
-            {isVerticalSwiping && (
-              <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center">
-                <div
-                  className="bg-black/30 backdrop-blur-sm rounded-full p-3 transform transition-all duration-200"
-                  style={{
-                    opacity: swipeProgress,
-                    transform: `scale(${0.8 + swipeProgress * 0.4})`,
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="32"
-                    height="32"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-white"
-                  >
-                    <polyline points="18 15 12 9 6 15"></polyline>
-                  </svg>
+        {/* Agent Info Panel */}
+        <AnimatePresence>
+          {showInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              className="absolute top-20 left-4 right-4 bg-black/80 backdrop-blur-xl rounded-2xl p-4 z-40 border border-white/10"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Sparkles size={16} className="text-pink-400" />
+                  <span className="text-white font-medium">About {currentAgent.name}</span>
+                </div>
+
+                {currentAgent.meta.occupation && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-white/60 text-sm">💼</span>
+                    <span className="text-white/80 text-sm">{currentAgent.meta.occupation}</span>
+                  </div>
+                )}
+
+                {currentAgent.meta.location && (
+                  <div className="flex items-center space-x-2">
+                    <MapPin size={14} className="text-white/60" />
+                    <span className="text-white/80 text-sm">{currentAgent.meta.location}</span>
+                  </div>
+                )}
+
+                {currentAgent.meta.likes && (
+                  <div>
+                    <span className="text-pink-400 text-sm font-medium">Likes: </span>
+                    <span className="text-white/80 text-sm">{currentAgent.meta.likes}</span>
+                  </div>
+                )}
+
+                {currentAgent.description && (
+                  <p className="text-white/70 text-sm leading-relaxed">
+                    {currentAgent.description}
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Bottom Info */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 z-30">
+          <div className="space-y-4 mb-4">
+            {/* Name and Age */}
+            <div className="flex items-end space-x-3">
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-1">
+                  {currentAgent.name}
+                </h1>
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-1">
+                    <Calendar size={16} className="text-white/60" />
+                    <span className="text-white/80 text-sm">{currentAgent.meta.age} years old</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Star size={16} className="text-yellow-400" />
+                    <span className="text-white/80 text-sm">4.9</span>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            <div className="absolute top-0 left-0 right-0 flex justify-between px-2 py-1 z-10">
-              {[
-                currentCharacter?.meta.profileImage ? 0 : -1,
-                currentCharacter?.meta.profileVideo ? 1 : -1,
-              ]
-                .filter((i) => i >= 0)
-                .map((_, index) => (
+            {/* Key traits */}
+            {currentAgent.meta.keyTraits && (
+              <div className="flex flex-wrap gap-2">
+                {currentAgent.meta.keyTraits.split(',').slice(0, 3).map((trait, index) => (
                   <div
                     key={index}
-                    className={`h-1 ${index === currentMediaIndex ? 'bg-white' : 'bg-white/30'} transition-all duration-300 flex-1 mx-0.5`}
-                  />
-                ))}
-            </div>
-
-            {hasMultipleMedia && (
-              <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1 text-white text-xs z-10">
-                {currentMediaIndex + 1}/2
-              </div>
-            )}
-
-            {showSwipeHint && (
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/60 px-6 py-3 rounded-full text-white text-center animate-pulse z-30">
-                <p>Swipe up/down to change characters</p>
-                <p className="text-sm mt-1">Pull down to refresh feed</p>
-              </div>
-            )}
-
-            <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-black to-transparent" />
-
-            <div className="absolute bottom-0 left-0 right-0 p-4 pb-20 z-20">
-              <div className="flex flex-col">
-                <div
-                  className="flex items-center mb-1 cursor-pointer"
-                  onClick={(e) => handleProfileClick(e, currentCharacter?.id)}
-                >
-                  <h2 className="text-2xl font-bold text-white">
-                    {currentCharacter?.name}
-                  </h2>
-                  <span className="text-zinc-400 ml-2">
-                    {currentCharacter?.meta.age}
-                  </span>
-                </div>
-
-                <p
-                  className="text-zinc-400 mb-4 cursor-pointer"
-                  onClick={(e) => handleProfileClick(e, currentCharacter?.id)}
-                >
-                  {currentCharacter?.description}
-                </p>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex space-x-4">
-                    <button
-                      onClick={(e) =>
-                        handleProfileClick(e, currentCharacter?.id)
-                      }
-                      className="flex items-center justify-center h-12 w-12 rounded-full bg-black/40 backdrop-blur-sm text-white border border-white/20"
-                      aria-label="View profile"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                    </button>
-
-                    <button
-                      onClick={(e) => handleLike(e, currentCharacter?.id)}
-                      className={`flex items-center justify-center h-12 w-12 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 ${
-                        currentCharacter?.id
-                          ? likedCharacters.includes(currentCharacter?.id)
-                            ? 'text-pink-500'
-                            : 'text-white'
-                          : 'none'
-                      }`}
-                      aria-label="Like character"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill={
-                          currentCharacter?.id
-                            ? likedCharacters.includes(currentCharacter?.id)
-                              ? 'currentColor'
-                              : 'none'
-                            : 'none'
-                        }
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                      </svg>
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={(e) => handleChatClick(e, currentCharacter?.id)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-medium"
+                    className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/30"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                    </svg>
-                    Chat Now
-                  </button>
-                </div>
+                    <span className="text-white text-xs font-medium">{trait.trim()}</span>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+
+            {/* Description */}
+            {currentAgent.description && (
+              <p className="text-white/80 text-sm leading-relaxed line-clamp-3">
+                {currentAgent.description}
+              </p>
+            )}
           </div>
-        </motion.div>
-      </AnimatePresence>
+        </div>
+
+        {/* Right Side Actions */}
+        {/*<div className="absolute right-4 bottom-32 space-y-6 z-30">*/}
+        {/*  /!* Like Button *!/*/}
+        {/*  <motion.button*/}
+        {/*    whileTap={{ scale: 0.8 }}*/}
+        {/*    onClick={() => handleLike(currentAgent.id)}*/}
+        {/*    className="flex flex-col items-center space-y-1"*/}
+        {/*  >*/}
+        {/*    <div className={`p-3 rounded-full backdrop-blur-sm border transition-all duration-200 ${*/}
+        {/*      liked.has(currentAgent.id)*/}
+        {/*        ? 'bg-pink-500/80 border-pink-400/50 shadow-lg shadow-pink-500/25'*/}
+        {/*        : 'bg-black/30 border-white/20 hover:bg-black/50'*/}
+        {/*    }`}>*/}
+        {/*      <Heart*/}
+        {/*        size={24}*/}
+        {/*        className={`transition-colors ${*/}
+        {/*          liked.has(currentAgent.id) ? 'text-white fill-current' : 'text-white'*/}
+        {/*        }`}*/}
+        {/*      />*/}
+        {/*    </div>*/}
+        {/*    <span className="text-white text-xs font-medium">*/}
+        {/*      {liked.has(currentAgent.id) ? 'Liked' : 'Like'}*/}
+        {/*    </span>*/}
+        {/*  </motion.button>*/}
+
+        {/*  /!* Share Button *!/*/}
+        {/*  <motion.button*/}
+        {/*    whileTap={{ scale: 0.8 }}*/}
+        {/*    className="flex flex-col items-center space-y-1"*/}
+        {/*  >*/}
+        {/*    <div className="p-3 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 hover:bg-black/50 transition-colors">*/}
+        {/*      <Share size={24} className="text-white" />*/}
+        {/*    </div>*/}
+        {/*    <span className="text-white text-xs font-medium">Share</span>*/}
+        {/*  </motion.button>*/}
+        {/*</div>*/}
+
+        {/* Chat Button */}
+        {/*<div className="absolute bottom-6 left-6 right-20 z-30">*/}
+        {/*  <motion.button*/}
+        {/*    whileTap={{ scale: 0.95 }}*/}
+        {/*    onClick={handleChatPress}*/}
+        {/*    className="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-pink-500 to-purple-600 py-4 rounded-2xl shadow-2xl shadow-pink-500/25 backdrop-blur-sm border border-pink-400/30"*/}
+        {/*  >*/}
+        {/*    <MessageCircle size={24} className="text-white" />*/}
+        {/*    <span className="text-white font-semibold text-lg">Start Chat</span>*/}
+        {/*  </motion.button>*/}
+        {/*</div>*/}
+
+        {/* Image Navigation Arrows (when multiple images) */}
+        {currentImages.length > 1 && (
+          <>
+            <AnimatePresence>
+              {currentImageIndex > 0 && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setCurrentImageIndex(prev => prev - 1)}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 z-20"
+                >
+                  <ChevronLeft size={24} className="text-white" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {currentImageIndex < currentImages.length - 1 && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setCurrentImageIndex(prev => prev + 1)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 z-20"
+                >
+                  <ChevronRight size={24} className="text-white" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+
+        {/* Progress indicator */}
+        {/*<div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 z-30">*/}
+        {/*  {agents.map((_, index) => (*/}
+        {/*    <div*/}
+        {/*      key={index}*/}
+        {/*      className={`w-2 h-2 rounded-full transition-all duration-300 ${*/}
+        {/*        index === currentIndex*/}
+        {/*          ? 'bg-white'*/}
+        {/*          : index < currentIndex*/}
+        {/*            ? 'bg-white/60'*/}
+        {/*            : 'bg-white/20'*/}
+        {/*      }`}*/}
+        {/*    />*/}
+        {/*  ))}*/}
+        {/*</div>*/}
+      </motion.div>
+
+      {/* Swipe hints */}
+      <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-10 opacity-30">
+        <div className="text-white text-xs text-center">
+          <div className="mb-1">↑ Next</div>
+          <div>↓ Previous</div>
+        </div>
+      </div>
+
+      <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-10 opacity-30">
+        <div className="text-white text-xs text-center">
+          <div className="mb-1">← → Photos</div>
+        </div>
+      </div>
     </div>
   );
 }
