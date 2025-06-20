@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import StatusBar from '@/components/status-bar';
 import { motion } from 'framer-motion';
 import { Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
@@ -939,7 +938,6 @@ export default function CreateCharacterPage() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <StatusBar />
 
       {/* Special offer banner */}
       <div className="bg-gradient-to-r from-purple-900 to-purple-700 py-2 px-4 flex justify-between items-center">

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/auth-context';
 import LoginForm from './login-form';
 import SignupForm from './signup-form';
+import useWindowSize from '@/lib/hooks/useWindowSize';
 
 interface AuthModalProps {
   initialMode: 'login' | 'signup';
@@ -16,12 +17,14 @@ export default function AuthModal({
   initialMode = 'login',
   onClose,
 }: AuthModalProps) {
+  const { isMobile } = useWindowSize();
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const { platform } = useAuth();
   return (
-    <div>
-
-      <div className="min-w-[420px] bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl overflow-hidden pb-6">
+    <div className={'h-full'} >
+      <div
+        className={` ${isMobile ? 'w-full' : 'min-w-[420px]'}  h-full `}
+      >
         <AnimatePresence mode="wait" initial={false}>
           {mode === 'login' ? (
             <motion.div

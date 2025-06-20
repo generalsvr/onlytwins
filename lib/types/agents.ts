@@ -2,7 +2,11 @@
 export interface AgentCreateRequest {
   name: string;
   description?: string;
-  configuration?: Record<string, any>;
+  configuration?: Record<string, number>;
+}
+
+interface PublicContent{
+   image: string
 }
 
 interface Meta {
@@ -19,7 +23,7 @@ interface Meta {
   profileImage?: string;
   profileVideo?: string;
   physicalDescription?: string;
-  publicContent?: any[]; // Adjust type based on actual content structure if known
+  publicContent?: PublicContent[]; // Adjust type based on actual content structure if known
 }
 
 export interface AgentResponse {

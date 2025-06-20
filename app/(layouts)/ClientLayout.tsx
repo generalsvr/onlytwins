@@ -20,9 +20,10 @@ import { useNotificationStore } from '@/lib/stores/notificationStore';
 import { authService } from '@/lib/services/v1/auth';
 import { Loader } from '@/components/ui/loader';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { UserResponse } from '@/lib/types/auth';
 
 interface InitialAuthState {
-  user: any;
+  user: UserResponse;
   isAuthenticated: boolean;
   needsRefresh: boolean;
 }
@@ -46,19 +47,19 @@ export default function ClientLayout({
   const [signUpPopupShow, setSignUpPopupShow] = useState(true);
   const { setToastNotification } = useNotificationStore();
   const isChatPage = pathname && pathname.includes('/chat/');
-  // Инициализация состояния из серверных данных
+
   useEffect(() => {
     const initializeAuth = async () => {
       setIsLoading(true);
 
       try {
-        // Если пользователь уже получен на сервере
+
         if (initialAuthState.user) {
           setUser(initialAuthState.user);
           return;
         }
 
-        // Если нужно обновить токен
+
         if (initialAuthState.needsRefresh) {
           try {
             await authService.refreshToken();

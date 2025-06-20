@@ -14,7 +14,7 @@ const clientApi: AxiosInstance = axios.create({
 // Request interceptor: Add Bearer token and transform keys
 clientApi.interceptors.request.use(
   async (config: CustomAxiosRequestConfig) => {
-    let { accessToken, refreshToken, expiresIn } = getTokens();
+    const { accessToken, refreshToken } = getTokens();
     const isPrivateRoute = !config.url?.includes('/public/')
 
     if (config.data) {
@@ -48,7 +48,6 @@ clientApi.interceptors.response.use(
     if (response.data) {
       response.data = humps.camelizeKeys(response.data);
     }
-    console.log(response)
     return response;
   },
   async (error: AxiosError) => {
@@ -61,6 +60,7 @@ clientApi.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
+
         const { refreshToken } = getTokens();
 
         if (!refreshToken) {

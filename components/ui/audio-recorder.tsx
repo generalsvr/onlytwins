@@ -9,7 +9,7 @@ const AudioRecorder: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<number | null>(null);
   const chunks = useRef<Blob[]>([]);
-  const [audio, setAudio] = useState<HTMLAudioElement>();
+
 
   const startRecording = async () => {
     try {
@@ -64,7 +64,6 @@ const AudioRecorder: React.FC = () => {
     try {
       if (audioUrl) {
         const audio = new Audio(audioUrl);
-        setAudio(audio);
         audio.play();
       }
     } catch (e) {

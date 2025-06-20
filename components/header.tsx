@@ -1,25 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, ChevronLeft, Menu, X, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, ChevronLeft, CreditCard } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import SafeImage from './safe-image';
+import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/theme-context';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useModalStore } from '@/lib/stores/modalStore';
 import AuthModal from '@/components/auth/auth-modal';
 import useWindowSize from '@/lib/hooks/useWindowSize';
-import NotificationsCenter from '@/components/notifications-center';
 import Image from 'next/image';
-import AudioRecorder from '@/components/ui/audio-recorder';
+
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
   showSearch?: boolean;
-  showNotifications?: boolean;
-  transparent?: boolean;
-  hideOnMobile?: boolean;
   onLogin?: () => void;
   onSignup?: () => void;
 }
@@ -27,17 +22,18 @@ interface HeaderProps {
 export default function Header({
   title,
   showBack = false,
+  showSearch = false,
   onLogin,
   onSignup,
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { isMobile } = useWindowSize();
   const { theme } = useTheme();
   const { openModal, closeModal } = useModalStore((state) => state);
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   const goBack = () => {
     router.back();
@@ -49,208 +45,128 @@ export default function Header({
 
   const deactivateSearch = () => {
     setIsSearchActive(false);
+    setSearchQuery('');
   };
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const handleAuth = (type: 'login' | 'signup') => {
-    if (type === 'login' && onLogin) {
-      onLogin();
-    } else if (type === 'signup' && onSignup) {
-      onSignup();
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Handle search logic here
+      console.log('Searching for:', searchQuery);
+      deactivateSearch();
     }
-    setIsMobileMenuOpen(false);
   };
 
-  const isHomePage = pathname === '/';
+  const openAuthModal = (mode: 'login' | 'signup') => {
+    openModal({
+      type: 'message',
+      content: <AuthModal initialMode={mode} onClose={() => closeModal()} />,
+    });
+
+    if (mode === 'login' && onLogin) onLogin();
+    if (mode === 'signup' && onSignup) onSignup();
+  };
+
+  // Don't render on mobile
+  if (isMobile) return null;
 
   return (
-    !isMobile && (
-      <>
-        <header
-          className={` left-0 right-0 top-0 z-40 bg-black/90 backdrop-blur-md pb-1`}
-        >
+    <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-lg border-b border-zinc-800/50">
+      <div className="">
+        <div className="flex items-center justify-between h-16">
+          {/* Left Section */}
+          <div className="flex items-center space-x-4">
+            {showBack && (
+              <button
+                onClick={goBack}
+                className="p-2 rounded-full hover:bg-zinc-800/50 transition-colors"
+                aria-label="Go back"
+              >
+                <ChevronLeft size={20} className="text-zinc-300" />
+              </button>
+            )}
 
-          <div className="flex items-center justify-between h-10">
-            {/* Left section */}
-            <div className="flex items-center">
-              {showBack && (
-                <button
-                  onClick={goBack}
-                  className="w-8 h-8 flex items-center justify-center rounded-full"
-                  aria-label="Go back"
-                >
-                  <ChevronLeft size={24} />
-                </button>
-              )}
-
-              {!isSearchActive && (
-                <>
-                  {title ? (
-                    <h1 className="text-xl md:text-2xl font-bold">{title}</h1>
-                  ) : (
-                    <div className="h-10 flex items-center">
-                      <Image
-                        src="/ot-logo.png"
-                        alt="OnlyTwins"
-                        width={isMobile ? 100 : 120}
-                        height={isMobile ? 28 : 40}
-                        className="object-contain"
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {isSearchActive && (
-                <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: '100%' }}
-                  className="flex items-center bg-zinc-800 rounded-full px-3 py-1"
-                >
-                  <Search size={18} className="text-zinc-400" />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    className="bg-transparent border-none outline-none ml-2 w-full"
-                    autoFocus
-                    onBlur={deactivateSearch}
+            {!isSearchActive ? (
+              title ? (
+                <h1 className="text-xl font-semibold text-white truncate max-w-xs">
+                  {title}
+                </h1>
+              ) : (
+                <div className="flex items-center">
+                  <Image
+                    src="/ot-logo.png"
+                    alt="OnlyTwins"
+                    width={120}
+                    height={32}
+                    className="object-contain"
+                    priority
                   />
-                </motion.div>
-              )}
-            </div>
-
-            {/* Right section - Desktop */}
-            <div className="flex items-center space-x-6">
-              {/*{showSearch && !isSearchActive && (*/}
-              {/*  <button*/}
-              {/*    onClick={activateSearch}*/}
-              {/*    aria-label="Search"*/}
-              {/*    className="hover:text-pink-500 transition-colors"*/}
-              {/*  >*/}
-              {/*    <Search*/}
-              {/*      size={24}*/}
-              {/*      className={theme === 'dark' ? 'text-white' : 'text-zinc-800'}*/}
-              {/*    />*/}
-              {/*  </button>*/}
-              {/*)}*/}
-
-              {/*<div className="relative">*/}
-              {/*  <NotificationsCenter />*/}
-              {/*</div>*/}
-
-              {/* Credit display for authenticated users */}
-              {isAuthenticated && (
-                <div className="flex items-center bg-zinc-800 rounded-full px-3 py-1">
-                  <CreditCard size={16} className="text-pink-400 mr-2" />
-                  <span className="text-sm font-medium">100 credits</span>
                 </div>
-              )}
-
-              {!isAuthenticated && (
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => {
-                      openModal({
-                        type: 'message',
-                        content: (
-                          <AuthModal
-                            initialMode={'signup'}
-                            onClose={() => closeModal()}
-                          />
-                        ),
-                      });
-                    }}
-                    className="px-6 py-2 rounded-[8px] font-bold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-colors"
-                  >
-                    Create your account
-                  </button>
-                  <button
-                    onClick={() =>
-                      openModal({
-                        type: 'message',
-                        content: (
-                          <AuthModal
-                            initialMode={'login'}
-                            onClose={() => closeModal()}
-                          />
-                        ),
-                      })
-                    }
-                    className="px-6 py-2 rounded-[8px] border border-zinc-700 hover:border-pink-500 transition-colors"
-                  >
-                    Login
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Right section - Mobile */}
-            {/*<div className="flex md:hidden items-center space-x-4">*/}
-            {/*  /!*{showSearch && !isSearchActive && (*!/*/}
-            {/*  /!*  <button onClick={activateSearch} aria-label="Search">*!/*/}
-            {/*  /!*    <Search*!/*/}
-            {/*  /!*      size={22}*!/*/}
-            {/*  /!*      className={theme === 'dark' ? 'text-white' : 'text-zinc-800'}*!/*/}
-            {/*  /!*    />*!/*/}
-            {/*  /!*  </button>*!/*/}
-            {/*  /!*)}*!/*/}
-
-            {/*  /!* Credit display for authenticated users on mobile *!/*/}
-            {/*  {isAuthenticated && (*/}
-            {/*    <div className="flex items-center bg-zinc-800 rounded-full px-2 py-1">*/}
-            {/*      <CreditCard size={14} className="text-pink-400 mr-1" />*/}
-            {/*      <span className="text-xs font-medium">100</span>*/}
-            {/*    </div>*/}
-            {/*  )}*/}
-
-            {/*  /!*{showNotifications && (*!/*/}
-            {/*  /!*  <div className="relative">*!/*/}
-            {/*  /!*    <NotificationsCenter />*!/*/}
-            {/*  /!*  </div>*!/*/}
-            {/*  /!*)}*!/*/}
-
-            {/*  /!*<button*!/*/}
-            {/*  /!*  onClick={toggleMobileMenu}*!/*/}
-            {/*  /!*  aria-label="Menu"*!/*/}
-            {/*  /!*  className="p-1"*!/*/}
-            {/*  /!*>*!/*/}
-            {/*  /!*  {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}*!/*/}
-            {/*  /!*</button>*!/*/}
-            {/*</div>*/}
+              )
+            ) : (
+              <motion.form
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onSubmit={handleSearchSubmit}
+                className="flex items-center bg-zinc-800/60 rounded-full px-4 py-2 min-w-[300px]"
+              >
+                <Search size={18} className="text-zinc-400 mr-3" />
+                <input
+                  type="text"
+                  placeholder="Search creators, content..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent border-none outline-none text-white placeholder-zinc-400 flex-1"
+                  autoFocus
+                  onBlur={deactivateSearch}
+                />
+              </motion.form>
+            )}
           </div>
-        </header>
 
-        {/* Mobile Menu - No login/signup options for Telegram Mini App */}
-        {/*<AnimatePresence>*/}
-        {/*  {isMobileMenuOpen && (*/}
-        {/*    <motion.div*/}
-        {/*      initial={{ opacity: 0, y: -20 }}*/}
-        {/*      animate={{ opacity: 1, y: 0 }}*/}
-        {/*      exit={{ opacity: 0, y: -20 }}*/}
-        {/*      className="fixed inset-0 z-30 bg-black pt-16 px-6 flex items-start justify-center"*/}
-        {/*    >*/}
-        {/*      <div className="flex flex-col space-y-4 w-full max-w-xs mt-8">*/}
-        {/*        /!* Only show Telegram info on mobile *!/*/}
+          {/* Right Section */}
+          <div className="flex items-center space-x-4">
+            {/* Search Button */}
+            {showSearch && !isSearchActive && (
+              <button
+                onClick={activateSearch}
+                className="p-2 rounded-full hover:bg-zinc-800/50 transition-colors"
+                aria-label="Search"
+              >
+                <Search size={20} className="text-zinc-300 hover:text-white" />
+              </button>
+            )}
 
-        {/*          <div className="text-center text-zinc-400 py-4">*/}
-        {/*            <p>OnlyTwins Telegram Mini App</p>*/}
-        {/*            {isAuthenticated && (*/}
-        {/*              <p className="mt-2">*/}
-        {/*                You have{' '}*/}
-        {/*                <span className="text-pink-400 font-bold">100</span>{' '}*/}
-        {/*                credits*/}
-        {/*              </p>*/}
-        {/*            )}*/}
-        {/*          </div>*/}
+            {/* Credits Display */}
+            {isAuthenticated && (
+              <div className="flex items-center bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20 rounded-full px-4 py-2">
+                <CreditCard size={16} className="text-pink-400 mr-2" />
+                <span className="text-sm font-medium text-white">
+                  {user?.credits || 0} credits
+                </span>
+              </div>
+            )}
 
-        {/*      </div>*/}
-        {/*    </motion.div>*/}
-        {/*  )}*/}
-        {/*</AnimatePresence>*/}
-      </>
-    )
+            {/* Auth Buttons */}
+            {!isAuthenticated && (
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => openAuthModal('login')}
+                  className="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => openAuthModal('signup')}
+                  className="px-6 py-2 text-sm font-semibold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-pink-500/25"
+                >
+                  Get Started
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
   );
 }

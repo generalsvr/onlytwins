@@ -1,7 +1,7 @@
 'use client';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import StatusBar from '@/components/status-bar';
+
 
 
 export default function VoiceDemoPage() {
@@ -9,7 +9,6 @@ export default function VoiceDemoPage() {
 
   return (
     <main className="flex min-h-screen flex-col">
-      <StatusBar />
       <div className="p-4">
         <button onClick={() => router.push('/')} className="mb-4">
           <ArrowLeft className="h-6 w-6" />

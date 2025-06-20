@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 
 const EXTERNAL_API_URL = 'https://platform.onlytwins.ai/api/v1';
 
-export async function GET(request: Request, { params }: { params: { path: string[] } }) {
+export async function GET(
+  request: Request,
+  { params }: { params: { path: string[] } }
+) {
   const resolvedParams = await params;
   const { searchParams } = new URL(request.url);
   const path = resolvedParams.path.join('/');
@@ -16,17 +19,17 @@ export async function GET(request: Request, { params }: { params: { path: string
       headers: {
         ...(authToken && { Authorization: authToken }),
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Accept: 'application/json',
       },
     });
-
-    console.log('Actual Request URL:', url);
-    console.log('Actual Query Parameters:', searchParams.toString());
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      return NextResponse.json(
+        { error: response.statusText },
+        { status: response.status }
+      );
     }
 
     return NextResponse.json(data);
@@ -38,17 +41,21 @@ export async function GET(request: Request, { params }: { params: { path: string
 
     return NextResponse.json(
       { error: error.message || 'Request failed' },
-      { status: 500 }
+      { status: 403 }
     );
   }
 }
 
-export async function POST(request: Request, { params }: { params: { path: string[] } }) {
+export async function POST(
+  request: Request,
+  { params }: { params: { path: string[] } }
+) {
   const resolvedParams = await params;
   const path = resolvedParams.path.join('/');
   const url = `${EXTERNAL_API_URL}/${path}`;
   const body = await request.json();
   const authToken = request.headers.get('Authorization');
+  const isServerAction = request.headers.get('ServerAction') === 'true';
 
   try {
     const response = await fetch(url, {
@@ -56,13 +63,13 @@ export async function POST(request: Request, { params }: { params: { path: strin
       headers: {
         ...(authToken && { Authorization: authToken }),
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Accept: 'application/json',
       },
       body: JSON.stringify(body),
     });
 
     const data = await response.json();
-
+    const resp = NextResponse.json(data);
     if (!response.ok) {
       return NextResponse.json(
         { error: data?.message || 'Request failed' },
@@ -70,8 +77,37 @@ export async function POST(request: Request, { params }: { params: { path: strin
       );
     }
 
-    return NextResponse.json(data);
-  } catch (error: any) {
+    // Если это запрос на обновление токенов через Server Action
+    if (path === 'auth/refresh' && isServerAction) {
+      try{
+        if (data['access_token']) {
+          resp.cookies.set('access_token', data['access_token'], {
+            httpOnly: false,
+            secure: false,
+            sameSite: 'strict',
+            maxAge: data['expires_in'],
+            path:'/'
+          });
+        }
+
+        if (data['refresh_token']) {
+          resp.cookies.set('refresh_token', data['refresh_token'], {
+            httpOnly: false,
+            secure: false,
+            sameSite: 'strict',
+            maxAge: data['refresh_expires_in'],
+            path:'/'
+          });
+        }
+      } catch(error){
+        console.log(error);
+      }
+
+    }
+
+    return resp;
+  } catch (error: Error) {
+    console.log('error', error);
     console.error('API Error:', {
       message: error.message,
     });
@@ -83,7 +119,10 @@ export async function POST(request: Request, { params }: { params: { path: strin
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { path: string[] } }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: { path: string[] } }
+) {
   const resolvedParams = await params;
   const path = resolvedParams.path.join('/');
   const url = `${EXTERNAL_API_URL}/${path}`;
@@ -96,7 +135,7 @@ export async function PUT(request: Request, { params }: { params: { path: string
       headers: {
         ...(authToken && { Authorization: authToken }),
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Accept: 'application/json',
       },
       body: JSON.stringify(body),
     });
@@ -108,11 +147,14 @@ export async function PUT(request: Request, { params }: { params: { path: string
         status: response.status,
         data: data,
         detail: data?.error?.details,
-        message:data?.error?.message
+        message: data?.error?.message,
       });
 
       return NextResponse.json(
-        { error: data?.error?.message || 'Request failed', status:response.status },
+        {
+          error: data?.error?.message || 'Request failed',
+          status: response.status,
+        },
         { status: response.status }
       );
     }
@@ -126,12 +168,16 @@ export async function PUT(request: Request, { params }: { params: { path: string
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { path: string[] } }) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: { path: string[] } }
+) {
   const resolvedParams = await params;
   const path = resolvedParams.path.join('/');
   const url = `${EXTERNAL_API_URL}/${path}`;
   const body = await request.json();
   const authToken = request.headers.get('Authorization');
+
 
   try {
     const response = await fetch(url, {
@@ -139,7 +185,7 @@ export async function PATCH(request: Request, { params }: { params: { path: stri
       headers: {
         ...(authToken && { Authorization: authToken }),
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Accept: 'application/json',
       },
       body: JSON.stringify(body),
     });
@@ -154,7 +200,9 @@ export async function PATCH(request: Request, { params }: { params: { path: stri
     }
 
     return NextResponse.json(data);
-  } catch (error: any) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+  } catch (error: Error) {
     console.error('API Error:', {
       message: error.message,
     });

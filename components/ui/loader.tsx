@@ -1,7 +1,5 @@
 import { useLoadingStore } from '@/lib/stores/useLoadingStore';
-import { Loader2 } from 'lucide-react';
 import React from 'react';
-import SafeImage from '@/components/safe-image';
 
 export const Loader: React.FC = () => {
   const isLoading = useLoadingStore((state) => state.isLoading);

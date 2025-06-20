@@ -12,7 +12,7 @@ import { clientApi } from '@/lib/clientApi';
 export const authService = {
   // Login
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await clientApi.post<AuthResponse>('/public/auth/login', data);
+    const response = await clientApi.post<AuthResponse>('/auth/login', data);
     setTokens({
       accessToken: response.data.token.accessToken,
       refreshToken: response.data.token.refreshToken,
@@ -24,7 +24,7 @@ export const authService = {
 
   // Register
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await clientApi.put<AuthResponse>('/public/auth/register', data);
+    const response = await clientApi.put<AuthResponse>('/auth/register', data);
     setTokens({
       accessToken: response.data.token.accessToken,
       refreshToken: response.data.token.refreshToken,
@@ -73,7 +73,7 @@ export const authService = {
 
   // Telegram authentication
   async telegramAuth(data: TelegramAuthRequest): Promise<AuthResponse> {
-    const response = await clientApi.put<AuthResponse>('/public/auth/telegram', data);
+    const response = await clientApi.put<AuthResponse>('/auth/telegram', data);
     setTokens({
       accessToken: response.data.token.accessToken,
       refreshToken: response.data.token.refreshToken,

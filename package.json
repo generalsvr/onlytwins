@@ -83,6 +83,7 @@
     "zustand": "^5.0.4"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.3.3",
     "@next/eslint-plugin-next": "^15.3.2",
     "@types/cookie": "^1.0.0",
     "@types/humps": "^2.0.6",

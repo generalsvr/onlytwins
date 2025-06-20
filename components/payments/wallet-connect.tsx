@@ -1,16 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  TonConnectUIProvider,
   useTonConnectUI,
   useTonAddress,
 } from '@tonconnect/ui-react';
-import { beginCell, JettonMaster, JettonWallet, TonClient } from '@ton/ton';
+import { beginCell, JettonMaster, TonClient } from '@ton/ton';
 import { Address, toNano } from '@ton/core';
-import { ChevronDown } from 'lucide-react';
 import { useModalStore } from '@/lib/stores/modalStore';
-import FailedPayment from '@/components/modals/failed-payment';
 import { Wallet as WalletIcon } from 'lucide-react';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import Image from 'next/image';
@@ -84,16 +81,8 @@ function CryptoPaymentPopup({
     ? networks.find((n) => n.name === selectedNetwork)?.coins || []
     : [];
 
-  // Для анимации появления монет
-  const [showCoins, setShowCoins] = useState(false);
 
-  React.useEffect(() => {
-    if (selectedNetwork) {
-      setTimeout(() => setShowCoins(true), 200);
-    } else {
-      setShowCoins(false);
-    }
-  }, [selectedNetwork]);
+
 
   return (
     <div className="inset-0 bg-transparent bg-opacity-60 flex justify-center z-50 min-w-[320px]">
@@ -247,18 +236,14 @@ export default function WalletConnect({
 }: WalletConnectProps) {
   const [tonConnectUI, setOptions] = useTonConnectUI();
   const userAddress = useTonAddress();
-  const [recipientAddress, setRecipientAddress] = useState('');
   const { isMobile } = useWindowSize();
   const [comment, setComment] = useState('');
-  const { openModal, closeModal, isOpen } = useModalStore((state) => state);
-
-  // Опции сетей и монет
-  const networks = [{ name: 'TON', coins: ['USDT', 'TON'] }];
+  const { openModal, isOpen } = useModalStore((state) => state);
 
   const handleConnect = async () => {
     try {
       await tonConnectUI.openModal();
-      console.log('Кошелёк подключён');
+      ('Кошелёк подключён');
     } catch (error) {
       console.error('Ошибка подключения кошелька:', error);
     }
@@ -271,7 +256,7 @@ export default function WalletConnect({
       });
       const address = Address.parse(userAddress);
       const balance = await client.getBalance(address);
-      console.log(`Баланс: ${balance.toString()} TON`);
+      (`Баланс: ${balance.toString()} TON`);
       alert(`Ваш баланс: ${balance.toString()} TON`);
     }
   };
@@ -297,7 +282,7 @@ export default function WalletConnect({
       };
 
       const result = await tonConnectUI.sendTransaction(transaction);
-      console.log('Транзакция отправлена:', result);
+      ('Транзакция отправлена:', result);
       alert('Платёж успешно отправлен!');
     } catch (error) {
       console.error('Ошибка отправки платежа:', error);
@@ -353,7 +338,7 @@ export default function WalletConnect({
         ],
       });
 
-      console.log('Transaction successful:', result);
+      ('Transaction successful:', result);
     } catch (error) {
       console.error('Transaction failed:', error);
     }

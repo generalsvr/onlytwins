@@ -67,7 +67,6 @@ export default function MainNavigation() {
 
   const navRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
-  const { theme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -105,6 +104,7 @@ export default function MainNavigation() {
   }, [activePage, isMobile]);
 
   const handleNavigate = (item: NavItem) => {
+
     if (!isAuthenticated && item.isAuth) {
       openModal({
         type: 'message',
@@ -157,7 +157,7 @@ export default function MainNavigation() {
                 ${active ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}
                 group
               `}
-            onClick={() => !disabled && handleNavigate(item)}
+            onClick={() => handleNavigate(item)}
             whileTap={!disabled ? { scale: 0.9 } : {}}
             whileHover={!disabled ? { scale: 1.05 } : {}}
             initial={{ opacity: 0, y: isMobile ? 20 : 0, x: isMobile ? 0 : 20 }}

@@ -1,22 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  ArrowLeft,
-  Send,
-  ImageIcon,
-  Gift,
-  Camera,
-  Paperclip,
-  MoreHorizontal,
-  Play,
-  Pause,
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import SafeImage from '../safe-image';
 import { useRouter } from 'next/navigation';
 import { useModalStore } from '@/lib/stores/modalStore';
-import FailedPayment from '@/components/modals/failed-payment';
+
 import AuthModal from '@/components/auth/auth-modal';
 import WaveSurfer from 'wavesurfer.js';
 import PayWall from '@/components/chat/paywall';
@@ -436,7 +423,6 @@ export default function CharacterChatTemplate({
 
         setIsTyping(false);
       }
-      console.log('response', response);
       if (response.conversationId && !currentConversationId) {
         setCurrentConversationId(response.conversationId);
       }

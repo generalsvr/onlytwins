@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowLeft, Plus, Edit, Trash2 } from 'lucide-react';
-import SafeImage from '../safe-image';
+import { ArrowLeft, Plus } from 'lucide-react';
 
 interface MyCharactersSectionProps {
   onBack: () => void;
@@ -12,25 +10,7 @@ export default function MyCharactersSection({
   onBack,
 }: MyCharactersSectionProps) {
   // Sample characters
-  const [characters, setCharacters] = useState([
-    {
-      id: 1,
-      name: 'Sophia',
-      description:
-        'Friendly AI companion with a passion for art and literature.',
-      image: '/claire-profile.png',
-      followers: 245,
-      chats: 1289,
-    },
-    {
-      id: 2,
-      name: 'Alex',
-      description: 'Tech enthusiast who loves gaming and sci-fi discussions.',
-      image: '/lee-profile.png',
-      followers: 178,
-      chats: 856,
-    },
-  ]);
+
 
   return (
     <div>
@@ -52,44 +32,44 @@ export default function MyCharactersSection({
 
         {/* Characters List */}
         <div className="space-y-4">
-          {characters.map((character) => (
-            <div
-              key={character.id}
-              className="bg-zinc-900 rounded-xl overflow-hidden"
-            >
-              <div className="relative">
-                <SafeImage
-                  src={character.image}
-                  alt={character.name}
-                  width={400}
-                  height={200}
-                  className="w-full h-40 object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
-                  <div>
-                    <h3 className="text-xl font-bold">{character.name}</h3>
-                    <div className="flex space-x-4 text-sm text-white/80">
-                      <span>{character.followers} followers</span>
-                      <span>{character.chats} chats</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4">
-                <p className="text-zinc-300 mb-4">{character.description}</p>
-                <div className="flex space-x-3">
-                  <button className="flex-1 bg-pink-500 py-2 rounded-lg font-medium flex items-center justify-center">
-                    <Edit size={16} className="mr-2" />
-                    Edit
-                  </button>
-                  <button className="flex-1 bg-zinc-800 py-2 rounded-lg font-medium flex items-center justify-center">
-                    <Trash2 size={16} className="mr-2" />
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+          {/*{characters.map((character) => (*/}
+          {/*  <div*/}
+          {/*    key={character.id}*/}
+          {/*    className="bg-zinc-900 rounded-xl overflow-hidden"*/}
+          {/*  >*/}
+          {/*    <div className="relative">*/}
+          {/*      <SafeImage*/}
+          {/*        src={character.image}*/}
+          {/*        alt={character.name}*/}
+          {/*        width={400}*/}
+          {/*        height={200}*/}
+          {/*        className="w-full h-40 object-cover"*/}
+          {/*      />*/}
+          {/*      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">*/}
+          {/*        <div>*/}
+          {/*          <h3 className="text-xl font-bold">{character.name}</h3>*/}
+          {/*          <div className="flex space-x-4 text-sm text-white/80">*/}
+          {/*            <span>{character.followers} followers</span>*/}
+          {/*            <span>{character.chats} chats</span>*/}
+          {/*          </div>*/}
+          {/*        </div>*/}
+          {/*      </div>*/}
+          {/*    </div>*/}
+          {/*    <div className="p-4">*/}
+          {/*      <p className="text-zinc-300 mb-4">{character.description}</p>*/}
+          {/*      <div className="flex space-x-3">*/}
+          {/*        <button className="flex-1 bg-pink-500 py-2 rounded-lg font-medium flex items-center justify-center">*/}
+          {/*          <Edit size={16} className="mr-2" />*/}
+          {/*          Edit*/}
+          {/*        </button>*/}
+          {/*        <button className="flex-1 bg-zinc-800 py-2 rounded-lg font-medium flex items-center justify-center">*/}
+          {/*          <Trash2 size={16} className="mr-2" />*/}
+          {/*          Delete*/}
+          {/*        </button>*/}
+          {/*      </div>*/}
+          {/*    </div>*/}
+          {/*  </div>*/}
+          {/*))}*/}
         </div>
       </div>
     </div>

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Wallet, CreditCard, Clock, ChevronRight, Plus } from 'lucide-react';
 import SubscriptionPopup from './subscription-popup';
-import useWindowSize from '@/lib/hooks/useWindowSize';
 
 interface CreditPackage {
   id: number;
@@ -24,7 +23,6 @@ interface Transaction {
 
 export default function WalletPage() {
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
-  const { isMobile } = useWindowSize();
   const creditPackages: CreditPackage[] = [
     {
       id: 1,

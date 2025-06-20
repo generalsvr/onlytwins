@@ -19,7 +19,6 @@ import MiniProfileDrawer from '@/components/mini-profile-drawer';
 interface ExplorePageProps {
   onCharacterSelect?: (characterId: number) => void;
   isAuthenticated?: boolean;
-  onAuthRequired?: (mode: 'login' | 'signup') => void;
 }
 
 // Sample categories
@@ -150,9 +149,6 @@ const characters = [
 ];
 
 export default function ExplorePage({
-  onCharacterSelect,
-  isAuthenticated,
-  onAuthRequired,
 }: ExplorePageProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -235,13 +231,11 @@ export default function ExplorePage({
           <div className="flex space-x-2">
             <button
               className="bg-pink-500 text-white px-4 py-1 rounded-full text-sm font-medium"
-              onClick={() => onAuthRequired && onAuthRequired('signup')}
             >
               Join
             </button>
             <button
               className="bg-zinc-800 text-white px-4 py-1 rounded-full text-sm font-medium"
-              onClick={() => onAuthRequired && onAuthRequired('login')}
             >
               Login
             </button>

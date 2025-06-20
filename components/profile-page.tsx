@@ -24,16 +24,15 @@ import MyProfileSection from './profile/my-profile-section';
 import SubscriptionSection from './profile/subscription-section';
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [activeSection, setActiveSection] = useState<string>('main');
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Sample stats
   const stats = [
     { label: 'Characters', value: '4' },
     { label: 'Chats', value: '12' },
     { label: 'Purchases', value: '3' },
-    { label: 'Tokens', value: user?.tokens?.toString() || '0' },
+    { label: 'Tokens', value: '0' },
   ];
 
   const handleSectionChange = (section: string) => {
@@ -45,13 +44,9 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
-    setShowLogoutConfirm(true);
+
   };
 
-  const confirmLogout = () => {
-    logout();
-    setShowLogoutConfirm(false);
-  };
 
   // Render the appropriate section based on activeSection state
   const renderSection = () => {

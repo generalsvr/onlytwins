@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { ArrowLeft, Copy, Share2, Users, ChevronRight } from 'lucide-react';
-import SafeImage from '../safe-image';
 
 interface AffiliateSectionProps {
   onBack: () => void;

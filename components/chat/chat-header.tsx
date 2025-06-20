@@ -44,7 +44,7 @@ export default function ChatHeader({
       label: 'Photo',
       color: 'text-blue-400 hover:text-blue-300',
       bgColor: 'bg-blue-500/20 hover:bg-blue-500/30',
-      action: () => console.log('Photo'),
+      action: () => ('Photo'),
     },
     {
       id: 'roleplay',
@@ -52,7 +52,7 @@ export default function ChatHeader({
       label: 'Roleplay',
       color: 'text-purple-400 hover:text-purple-300',
       bgColor: 'bg-purple-500/20 hover:bg-purple-500/30',
-      action: () => console.log('Roleplay'),
+      action: () => ('Roleplay'),
     },
     {
       id: 'nsfw',
@@ -68,7 +68,7 @@ export default function ChatHeader({
       label: 'Gift',
       color: 'text-yellow-400 hover:text-yellow-300',
       bgColor: 'bg-yellow-500/20 hover:bg-yellow-500/30',
-      action: () => console.log('Gift'),
+      action: () => ('Gift'),
     },
   ];
 

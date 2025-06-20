@@ -6,9 +6,9 @@ export type ModalType = 'auth' | 'message' | 'custom' | null;
 interface ModalStore {
     isOpen: boolean;
     type: ModalType;
-    props: Record<string, any>;
+    props: Record<string, string>;
     content: ReactNode | null;
-    openModal: (args: { type?: ModalType; props?: Record<string, any>; content?: ReactNode | null }) => void;
+    openModal: (args: { type?: ModalType; props?: Record<string, string>; content?: ReactNode | null }) => void;
     closeModal: () => void;
 }
 

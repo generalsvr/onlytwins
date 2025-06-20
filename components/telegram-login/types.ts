@@ -71,7 +71,7 @@ export interface LoginButtonProps {
 /**
  * The options to create the script.
  */
-export interface CreateScriptOptions extends LoginButtonProps {}
+export type CreateScriptOptions = LoginButtonProps
 
 /**
  * @internal

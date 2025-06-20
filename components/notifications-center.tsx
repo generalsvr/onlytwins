@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, Heart, MessageCircle, Gift, User, Star } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 import SafeImage from './safe-image';
 import NotificationToast from './notification-toast';
@@ -66,19 +66,13 @@ const notifications: Notification[] = [
   },
 ];
 
-const suggestedProfiles = [
-  { id: 1, name: 'valeria', avatar: '/valeria-camila-profile.png' },
-  { id: 2, name: 'jennypinky', avatar: '/jennypinky-profile.png' },
-  { id: 3, name: 'akari', avatar: '/akari-profile.png' },
-  { id: 4, name: 'hana', avatar: '/hana-profile.png' },
-  { id: 5, name: 'lee', avatar: '/lee-profile.png' },
-];
+
 
 export default function NotificationsCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifs, setNotifs] = useState<Notification[]>(notifications);
   const { theme } = useTheme();
-  const { toastNotification, setToastNotification, dismissToastNotification } = useNotificationStore();
+  const { toastNotification, dismissToastNotification } = useNotificationStore();
 
   const unreadCount = notifs.filter((n) => !n.read).length;
 
@@ -86,20 +80,7 @@ export default function NotificationsCenter() {
     setNotifs(notifs.map((n) => ({ ...n, read: true })));
   };
 
-  const getNotificationIcon = (type: Notification['type']) => {
-    switch (type) {
-      case 'like':
-        return <Heart size={16} className="text-pink-500" />;
-      case 'message':
-        return <MessageCircle size={16} className="text-blue-500" />;
-      case 'gift':
-        return <Gift size={16} className="text-purple-500" />;
-      case 'follow':
-        return <User size={16} className="text-green-500" />;
-      case 'system':
-        return <Star size={16} className="text-yellow-500" />;
-    }
-  };
+
 
   const toggleNotifications = () => {
     setIsOpen(!isOpen);

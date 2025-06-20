@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, MessageCircle, Clock, Star } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Search, Filter, MessageCircle, Clock, Star } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConversationSummary } from '@/lib/types/chat';

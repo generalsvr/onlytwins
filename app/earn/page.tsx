@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Gift, Award, Calendar, ExternalLink, Coins, Trophy, Zap, CheckCircle, Clock } from 'lucide-react';
+import { Gift, Calendar, ExternalLink, Coins, Trophy, Zap, CheckCircle, Clock } from 'lucide-react';
 import SafeImage from '@/components/safe-image';
 import { useAuth } from '@/contexts/auth-context';
 import useWindowSize from '@/lib/hooks/useWindowSize';

@@ -23,7 +23,7 @@ export default function IframeVoiceCallModal({
 
   // Handle iframe load event
   const handleIframeLoad = () => {
-    console.log('Iframe loaded successfully');
+    ('Iframe loaded successfully');
     if (loadTimeoutRef.current) {
       clearTimeout(loadTimeoutRef.current);
     }

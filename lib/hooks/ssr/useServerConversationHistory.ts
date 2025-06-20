@@ -1,5 +1,5 @@
 import useAuthServerState from '@/lib/hooks/ssr/useAuthServerState';
-import { ChatMessage, ConversationSummary } from '@/lib/types/chat';
+import { ChatMessage } from '@/lib/types/chat';
 import { cache } from 'react';
 import { serverConversationsService } from '@/lib/services/v1/ssr/conversations';
 

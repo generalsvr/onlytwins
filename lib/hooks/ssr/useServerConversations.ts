@@ -8,7 +8,7 @@ interface ServerConversationsResponse {
   error: Error | null;
 }
 export const getConversationsSSR = cache(
-  async (agentId: number | undefined): Promise<ServerConversationsResponse> => {
+  async (agentId?: number | undefined): Promise<ServerConversationsResponse> => {
     try {
       const authState = await useAuthServerState();
 

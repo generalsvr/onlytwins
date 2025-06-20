@@ -6,8 +6,14 @@ interface AuthServerResponse {
   user: UserResponse | null;
   isAuthenticated: boolean;
   needsRefresh: boolean;
+  tokens?: {
+    access_token: string;
+    refresh_token: string;
+  }
 }
+
 export default async function useAuthServerState(): Promise<AuthServerResponse> {
+
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get('access_token')?.value;
@@ -24,8 +30,8 @@ export default async function useAuthServerState(): Promise<AuthServerResponse> 
     if (!accessToken && refreshToken) {
       return {
         user: null,
-        isAuthenticated: false,
-        needsRefresh: true,
+        isAuthenticated: true,
+        needsRefresh: true
       };
     }
 
@@ -35,7 +41,11 @@ export default async function useAuthServerState(): Promise<AuthServerResponse> 
       isAuthenticated: true,
       needsRefresh: false,
     };
-  } catch (error) {
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error: Error) {
     return {
       user: null,
       isAuthenticated: false,

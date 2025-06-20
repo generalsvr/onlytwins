@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {ArrowLeft, Banknote, Coins, Plus} from 'lucide-react';
+import {ArrowLeft, Banknote, Plus} from 'lucide-react';
 import SafeImage from '../safe-image';
 import StripeCheckoutButton from '@/components/stripe-buttons';
 import WalletConnect from '@/components/payments/wallet-connect';

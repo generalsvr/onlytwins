@@ -17,7 +17,7 @@ export const agentService = {
     return response.data;
   },
   async getAllPublicAgents(): Promise<AgentResponse[]> {
-    const response = await clientApi.get<AgentResponse[]>('/public/agents/public', {
+    const response = await clientApi.get<AgentResponse[]>('/agents/public', {
       params: {
         limit: 50,
         offset: 0

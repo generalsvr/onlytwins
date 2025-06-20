@@ -75,7 +75,7 @@ export default function CustomVoiceCallModal({
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then((stream) => {
-        console.log('Microphone permission granted');
+        ('Microphone permission granted');
         setMicPermission('granted');
         // Store the stream for later use
         streamRef.current = stream;
@@ -171,7 +171,7 @@ export default function CustomVoiceCallModal({
         mimeType: mimeType,
       });
 
-      console.log(`Using MIME type: ${mimeType} for recording`);
+      (`Using MIME type: ${mimeType} for recording`);
 
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -246,7 +246,7 @@ export default function CustomVoiceCallModal({
           formData.append('file', audioBlob, 'recording.webm');
           formData.append('model_id', 'scribe_v1'); // Using the valid model_id as specified in the error
 
-          console.log(
+          (
             'Sending audio to ElevenLabs STT API',
             audioBlob.type,
             audioBlob.size
@@ -304,7 +304,7 @@ export default function CustomVoiceCallModal({
 
       // Now send the conversation to the ElevenLabs Conversation API
       try {
-        console.log('Sending conversation to ElevenLabs API', updatedHistory);
+        ('Sending conversation to ElevenLabs API', updatedHistory);
 
         const conversationResponse = await fetch(
           `https://api.elevenlabs.io/v1/conversation/${agentId}`,
