@@ -5,7 +5,14 @@ export const serverConversationsService = {
   // Get conversation history
   async getConversationHistory(conversationId: string): Promise<ChatMessage[]> {
     const response = await serverApi.get<ChatMessage[]>(
-      `/conversations/${conversationId}`
+      `/conversations/${conversationId}`,
+      {
+        params: {
+          limit: 10,
+          offset: 0,
+          sort_order: 'desc',
+        },
+      }
     );
     return response.data;
   },
@@ -28,7 +35,7 @@ export const serverConversationsService = {
       {
         params: {
           ...(agentId && { agent_id: agentId }),
-          limit: 20,
+          limit: 10,
           offset: 0,
           sort_by: 'last_activity',
           sort_order: 'desc',
@@ -37,5 +44,4 @@ export const serverConversationsService = {
     );
     return response.data;
   },
-
-}
+};

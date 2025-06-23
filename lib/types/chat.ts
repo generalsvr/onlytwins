@@ -18,11 +18,16 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   status: string;
   timestamp: string;
-  contentData: {
-    type: string;
-    url: string;
-    name: string;
-    paid: boolean;
+  metadata?: {
+    content:{
+      url?: string;
+      currency?: string;
+      name?: string;
+      paid?: boolean;
+      price?: number | null;
+      size?: number;
+      mimeType?: string;
+    }
   };
 }
 
@@ -32,7 +37,13 @@ export interface Message {
   sender: 'user' | 'agent';
   audio?: boolean;
   time: string;
-  image?: string;
+  media?:{
+    type?: string;
+    url?: string;
+    paid?: boolean;
+    price?: number | null;
+
+  }
 }
 
 export interface ChatResponse extends Request {
@@ -41,9 +52,15 @@ export interface ChatResponse extends Request {
   conversationId: string;
   responseTimeMs: number;
   timestamp: string;
-  metadata: {
-    content?:{
-      url: string
+  metadata?: {
+    content:{
+      url?: string;
+      currency?: string;
+      name?: string;
+      paid?: boolean;
+      price?: number | null;
+      size?: number;
+      mimeType?: string;
     }
   };
 }

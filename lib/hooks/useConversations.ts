@@ -1,53 +1,74 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { ConversationSummary } from '@/lib/types/chat';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { conversationService } from '@/lib/services/v1/conversations';
+
+interface UseConversationsOptions {
+  initialData?: ConversationSummary[];
+  pageSize?: number;
+}
 
 interface UseConversationsResult {
   conversations: ConversationSummary[];
-  isLoading: boolean;
   error: Error | null;
+  hasMore: boolean;
+  loadMore: () => void;
+  isLoadingMore: boolean;
 }
 
 export const useConversations = (
   userId: number | null,
-  agentId?: number | undefined
+  agentId?: number | undefined,
+  options: UseConversationsOptions = {}
 ): UseConversationsResult => {
-  const { isMeLoading } = useAuthContext();
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { initialData = [], pageSize = 20 } = options;
 
-  const fetchConversations = useCallback(async () => {
-    if (!userId || isMeLoading) return;
+  const [conversations, setConversations] = useState<ConversationSummary[]>(initialData);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [hasMore, setHasMore] = useState(initialData.length === pageSize);
+
+  const loadMore = useCallback(async () => {
+    if (!userId || !hasMore || isLoadingMore) return;
+
     try {
-      setIsLoading(true);
+      setIsLoadingMore(true);
       setError(null);
-      const data = await conversationService.getUserConversations(userId, agentId);
-      const uniqueConversations = data.reduce((acc, current) => {
-        const existing = acc.find(
-          (item) => item.agent.id === current.agent.id
-        );
-        if (!existing) {
-          acc.push(current);
-        }
-        return acc;
-      }, [] as ConversationSummary[]);
-      setConversations(uniqueConversations);
+
+      const currentOffset = conversations.length;
+
+      const data = await conversationService.getUserConversations(
+        userId,
+        agentId,
+        pageSize,
+        currentOffset
+      );
+
+      // Remove duplicates based on agent.id
+      const uniqueNewConversations = data.filter(newConv =>
+        !conversations.some(existingConv => existingConv.agent.id === newConv.agent.id)
+      );
+
+      setConversations(prev => [...prev, ...uniqueNewConversations]);
+
+      // Check if there are more items to load
+      setHasMore(data.length === pageSize);
+
     } catch (err) {
       setError(
         err instanceof Error
           ? err
-          : new Error('Failed to fetch conversations')
+          : new Error('Failed to load more conversations')
       );
     } finally {
-      setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [userId, isMeLoading, agentId]);
+  }, [userId, agentId, pageSize, conversations, hasMore, isLoadingMore]);
 
-  useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
-
-  return { conversations, isLoading, error };
+  return {
+    conversations,
+    error,
+    hasMore,
+    loadMore,
+    isLoadingMore
+  };
 };

@@ -1,6 +1,14 @@
 import SafeImage from '@/components/safe-image';
 import React, { useState } from 'react';
-import { Pause, Play, Download, Copy, Check } from 'lucide-react';
+import {
+  Pause,
+  Play,
+  Download,
+  Copy,
+  Check,
+  Lock,
+  CreditCard,
+} from 'lucide-react';
 import { Message } from '@/lib/types/chat';
 import { AgentResponse } from '@/lib/types/agents';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,6 +20,7 @@ interface MessageItemProps {
   togglePlayPause: (messageId: number) => void;
   playingStates: { [key: number]: boolean };
   isMobile: boolean;
+  onPurchaseMedia?: (messageId: number, price: number) => void;
 }
 
 export default function MessageItem({
@@ -19,14 +28,18 @@ export default function MessageItem({
   character,
   togglePlayPause,
   playingStates,
-  isMobile
+  isMobile,
+  onPurchaseMedia,
 }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   const isUser = message.sender === 'user';
   const isAgent = message.sender === 'agent';
+  const isPaidMedia = message.media?.price && message.media.price > 0;
+  const isMediaPurchased = message.media?.purchased || false;
 
   const copyToClipboard = async () => {
     if (message.text) {
@@ -36,15 +49,16 @@ export default function MessageItem({
     }
   };
 
-  const formatTime = (timeString: string) => {
+  const handlePurchaseMedia = async () => {
+    if (!isPaidMedia || !onPurchaseMedia) return;
+
+    setIsPurchasing(true);
     try {
-      const date = new Date(timeString);
-      return date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return timeString;
+      await onPurchaseMedia(message.id, message.media!.price!);
+    } catch (error) {
+      console.error('Purchase failed:', error);
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
@@ -60,7 +74,6 @@ export default function MessageItem({
             whileHover={{ scale: 1.1 }}
             transition={{ duration: 0.2 }}
           >
-
             <img
               src={
                 `${process.env.NEXT_PUBLIC_MEDIA_URL}/${character.meta.profileImage}` ||
@@ -78,7 +91,6 @@ export default function MessageItem({
             className="relative"
             onHoverStart={() => setShowActions(true)}
             onHoverEnd={() => setShowActions(false)}
-            whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.2 }}
           >
             {/* Text message */}
@@ -126,12 +138,17 @@ export default function MessageItem({
               </div>
             )}
 
-            {/* Image message */}
-            {message.image && (
+            {/* Image/Video message */}
+            {message.media && (
               <motion.div
                 className={`
-                w-[350px] mt-5
-                  rounded-2xl overflow-hidden shadow-lg border-2 border-zinc-600/30
+                  w-[350px] mt-5 relative
+                  rounded-2xl overflow-hidden shadow-lg border-2 
+                  ${
+                    isPaidMedia && !isMediaPurchased
+                      ? 'border-yellow-500/50 ring-2 ring-yellow-500/20'
+                      : 'border-zinc-600/30'
+                  }
                   ${isUser ? 'rounded-br-md' : 'rounded-bl-md'}
                 `}
                 initial={{ opacity: 0 }}
@@ -139,44 +156,125 @@ export default function MessageItem({
                 transition={{ duration: 0.3 }}
               >
                 <div className="relative">
+                  {/* Платный контент - размытое превью */}
+                  {isPaidMedia && !isMediaPurchased ? (
+                    <div className="relative">
+                      {message.media.type?.includes('video') ? (
+                        <video
+                          src={message.media.url}
+                          className="w-full max-w-sm h-auto object-cover rounded-2xl blur-lg"
+                          poster={message.media.url}
+                        />
+                      ) : (
+                        <img
+                          src={message.media?.url}
+                          alt="Premium content preview"
+                          className="w-full max-w-sm h-auto object-cover rounded-2xl blur-lg"
+                          onLoad={() => setImageLoaded(true)}
+                          loading="lazy"
+                        />
+                      )}
 
-                  <img
-                    src={message.image}
-                    alt="Shared image"
-                    className="w-full max-w-sm h-auto object-cover rounded-2xl"
-                    onLoad={() => setImageLoaded(true)}
-                    loading="lazy"
-                  />
-                  {!imageLoaded && (
-                    <div className="absolute inset-0 bg-zinc-800 animate-pulse rounded-2xl flex items-center justify-center">
-                      <div className="w-8 h-8 border-2 border-zinc-600 border-t-pink-500 rounded-full animate-spin" />
+                      {/* Overlay для платного контента */}
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center rounded-2xl">
+                        <motion.div
+                          className="text-center space-y-4 flex justify-center items-center flex-col"
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          <div className="space-y-2">
+                            <p className="text-white font-medium">
+                              Premium Content
+                            </p>
+                            <p className="text-yellow-400 text-lg font-bold">
+                              ${message.media.price}
+                            </p>
+                          </div>
+
+                          <motion.button
+                            onClick={handlePurchaseMedia}
+                            disabled={isPurchasing}
+                            className="flex items-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-full text-white font-medium transition-all duration-200"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {isPurchasing ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Processing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard size={16} />
+                                <span>Unlock</span>
+                              </>
+                            )}
+                          </motion.button>
+                        </motion.div>
+                      </div>
                     </div>
+                  ) : (
+                    // Обычный контент или уже купленный
+                    <>
+                      {message.media.type?.includes('video') ? (
+                        <video
+                          src={message.media.url}
+                          className="w-full max-w-sm h-auto object-cover rounded-2xl"
+                          controls
+                        />
+                      ) : (
+                        <img
+                          src={message.media?.url}
+                          alt="Shared image"
+                          className="w-full max-w-sm h-auto object-cover rounded-2xl"
+                          onLoad={() => setImageLoaded(true)}
+                          loading="lazy"
+                        />
+                      )}
+
+                      {!imageLoaded && (
+                        <div className="absolute inset-0 bg-zinc-800 animate-pulse rounded-2xl flex items-center justify-center">
+                          <div className="w-8 h-8 border-2 border-zinc-600 border-t-pink-500 rounded-full animate-spin" />
+                        </div>
+                      )}
+
+                      {/* Обычные действия для изображений */}
+                      <AnimatePresence>
+                        {showActions && imageLoaded && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl"
+                          >
+                            <button
+                              onClick={() =>
+                                window.open(message.media?.url, '_blank')
+                              }
+                              className="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                              title="View full size"
+                            >
+                              <Download size={20} className="text-white" />
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </>
                   )}
 
-                  {/* Image overlay actions */}
-                  <AnimatePresence>
-                    {showActions && imageLoaded && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl"
-                      >
-                        <button
-                          onClick={() => window.open(message.image, '_blank')}
-                          className="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
-                          title="View full size"
-                        >
-                          <Download size={20} className="text-white" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {/* Индикатор покупки */}
+                  {isPaidMedia && isMediaPurchased && (
+                    <div className="absolute top-2 right-2 bg-green-500/90 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                      <Check size={12} />
+                      <span>Purchased</span>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
 
-            {/* Audio message (commented out but improved) */}
+            {/* Audio message */}
             {message.audio && (
               <div
                 className={`

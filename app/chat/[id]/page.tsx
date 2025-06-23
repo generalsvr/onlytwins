@@ -40,7 +40,7 @@ export default async function CharacterChatPage({
     return (
       <CharacterChatTemplate
         conversationId={lastConv?.conversationId || ''}
-        history={history}
+        history={history.reverse()}
         character={data.data}
       />
     );

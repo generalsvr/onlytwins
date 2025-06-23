@@ -21,6 +21,7 @@ import { authService } from '@/lib/services/v1/auth';
 import { Loader } from '@/components/ui/loader';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { UserResponse } from '@/lib/types/auth';
+import SuccessPayment from '@/components/modals/success-payment';
 
 interface InitialAuthState {
   user: UserResponse;
@@ -86,16 +87,11 @@ export default function ClientLayout({
 
   // Обработка параметров платежа
   useEffect(() => {
-    const paymentStatus = searchParams.get('payment');
+    const paymentStatus = searchParams.get('payment_status');
     if (paymentStatus === 'success') {
-      setToastNotification({
-        id: 5,
-        type: 'system',
-        username: 'OnlyTwins',
-        avatar: '/app-icon.png',
-        content: 'Payment successfully',
-        time: 'now',
-        read: true,
+      openModal({
+        type: 'message',
+        content: <SuccessPayment />,
       });
     } else if (paymentStatus === 'failed') {
       openModal({

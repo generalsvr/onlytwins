@@ -11,37 +11,27 @@ import ChatHeader from '@/components/chat/chat-header';
 import MessageList from '@/components/chat/messages-list';
 import ChatInput from '@/components/chat/chat-input';
 import useWindowSize from '@/lib/hooks/useWindowSize';
+import { useConversationHistory } from '@/lib/hooks/useConversationHistory';
 import { AgentResponse } from '@/lib/types/agents';
 import { chatService } from '@/lib/services/v1/chat';
-import { conversationService } from '@/lib/services/v1/conversations';
-import {
-  ChatMessage,
-  ChatRequest,
-  ChatResponse,
-  ConversationSummary,
-  Message,
-} from '@/lib/types/chat';
-import {
-  ConversationCreate,
-  ConversationResponse,
-} from '@/lib/types/conversation';
-import { uuid } from 'valibot';
+import { ChatMessage, ChatRequest, Message } from '@/lib/types/chat';
+
 import { v4 } from 'uuid';
 import { formatDate, getCurrentTime } from '@/lib/utils';
 import { useAuthStore } from '@/lib/stores/authStore';
 
 interface CharacterChatTemplateProps {
   character: AgentResponse | null;
-  conversationId?: string; // Optional conversation ID
-  history: ChatMessage[] | null;
+  conversationId?: string;
+  history: ChatMessage[] | null; // SSR данные
 }
 
 export default function CharacterChatTemplate({
   character,
   conversationId,
-  history
+  history,
 }: CharacterChatTemplateProps) {
-  const { isAuthenticated } = useAuthStore(state => state)
+  const { isAuthenticated } = useAuthStore((state) => state);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [showOptions, setShowOptions] = useState(false);
@@ -50,9 +40,6 @@ export default function CharacterChatTemplate({
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
   >(null);
-  const [page, setPage] = useState(1);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   const [isRecording, setIsRecording] = useState(false);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
@@ -64,206 +51,122 @@ export default function CharacterChatTemplate({
   const [playingStates, setPlayingStates] = useState<{
     [key: number]: boolean;
   }>({});
+
   const wavesurferInstances = useRef<{ [key: number]: WaveSurfer }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [hasScrolledManually, setHasScrolledManually] = useState(false);
   const router = useRouter();
   const { isMobile, isDesktop } = useWindowSize();
-  const { openModal, closeModal } = useModalStore()
+  const { openModal, closeModal } = useModalStore();
+  console.log(messages)
+  // Используем хук для пагинации
+  const {
+    history: paginatedHistory,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    setInitialHistory,
+  } = useConversationHistory(currentConversationId);
 
   // Scroll to bottom of messages
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+
+
   const onBack = () => {
     router.push('/');
-  }
+  };
+
+  const handleScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const container = e.currentTarget;
+      if (!container) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = container;
+
+      // Если контент помещается в контейнер, пагинация не нужна
+      if (scrollHeight <= clientHeight) {
+        return;
+      }
+
+      // Отмечаем, что пользователь начал скроллить вручную
+      // Проверяем, что скролл больше небольшого порога (чтобы избежать ложных срабатываний)
+      if (!hasScrolledManually && scrollTop > 50) {
+        setHasScrolledManually(true);
+      }
+      // Загружаем только если:
+      // 1. Пользователь уже скроллил вручную
+      // 2. Достиг верха контейнера
+      // 3. Есть еще данные для загрузки
+      // 4. Не идет загрузка в данный момент
+      if (hasScrolledManually && scrollTop === 0 && hasMore && !isLoadingMore) {
+        console.log('Loading more messages...');
+        loadMore();
+      }
+    },
+    [hasScrolledManually, isLoadingMore, hasMore, loadMore]
+  );
+
   useEffect(() => {
     if (!conversationId) return;
-
     setCurrentConversationId(conversationId);
+    // Сбрасываем флаг при смене разговора
+    setHasScrolledManually(false);
   }, [conversationId]);
 
+  // Устанавливаем SSR историю при инициализации
   useEffect(() => {
-    if (!history) return;
-
-    const preparedHistory = history.map((msg) => {
-      return {
+    if (history && history.length > 0) {
+      const preparedHistory: Message[] = history.map((msg) => ({
         id: String(msg.messageId),
         text: msg.content,
-        sender:
-          msg.role === 'user'
-            ? ('user' as 'user' | 'agent')
-            : ('agent' as 'user' | 'agent'),
+        sender: msg.role === 'user' ? 'user' : 'agent',
         time: formatDate(msg.timestamp),
-        image: msg.contentData ? msg.contentData.url : undefined,
-      };
-    });
+        ...(msg?.metadata?.content && {
+          media: {
+            url: msg?.metadata?.content?.url,
+            type: msg?.metadata?.content.mimeType,
+            price: msg?.metadata?.content.price,
+          },
+        }),
+      }));
 
-    setMessages(preparedHistory);
-  }, [history]);
+      setMessages(preparedHistory);
+      setInitialHistory(history);
+      // Сбрасываем флаг при загрузке новой истории
+      setHasScrolledManually(false);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [history, setInitialHistory]);
+
+  // Обновляем сообщения при изменении пагинированной истории
+  useEffect(() => {
+    if (paginatedHistory.length > 0) {
+      const preparedHistory: Message[] = paginatedHistory.map((msg) => ({
+        id: String(msg.messageId),
+        text: msg.content,
+        sender: msg.role === 'user' ? 'user' : 'agent',
+        time: formatDate(msg.timestamp),
+        ...(msg?.metadata?.content && {
+          media: {
+            url: msg?.metadata?.content?.url,
+            type: msg?.metadata?.content.mimeType,
+            price: msg?.metadata?.content.price,
+          },
+        }),
+      }));
+
+      setMessages(preparedHistory);
+
+    }
+  }, [paginatedHistory]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
-
-  // Create or fetch conversation
-  // useEffect(() => {
-  //   const initializeConversation = async () => {
-  //     if (!isAuthenticated || !character) {
-  //       return;
-  //     }
-  //
-  //     try {
-  //       if (!currentConversationId) {
-  //         // Create a new conversation
-  //         const conversationData: ConversationCreate = {
-  //           isPublic: false
-  //         };
-  //         const newConversation = await conversationService.createConversation(
-  //           conversationData
-  //         );
-  //         setCurrentConversationId(newConversation.id);
-  //
-  //         // Set initial welcome message
-  //         const initialMessage: ChatMessage = {
-  //           id: Date.now(),
-  //           conversationId: newConversation.id,
-  //           senderId: character.id,
-  //           senderType: 'agent',
-  //           content: `Hey there! I'm ${character.name}. How are you doing today? 😊`,
-  //           createdAt: new Date().toISOString(),
-  //           status: 'sent',
-  //         };
-  //         setMessages([initialMessage]);
-  //       } else {
-  //         // Fetch conversation history
-  //         await loadMessages(currentConversationId);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error initializing conversation:', error);
-  //       openModal({
-  //         type: 'message',
-  //         content: <div>Error initializing chat. Please try again.</div>,
-  //       });
-  //     }
-  //   };
-  //
-  //   initializeConversation();
-  // }, [isAuthenticated, character, currentConversationId]);
-
-  // Load messages with pagination
-  // const loadMessages = async (
-  //   conversationId: number,
-  //   pageNumber: number = 1
-  // ) => {
-  //   if (!hasMoreMessages || isLoadingMessages) return;
-  //
-  //   setIsLoadingMessages(true);
-  //   try {
-  //     const fetchedMessages =
-  //       await chatService.getConversationHistory(conversationId);
-  //     // Simulate pagination by slicing (since API doesn't explicitly support pagination)
-  //     const messagesPerPage = 50;
-  //     const startIndex = (pageNumber - 1) * messagesPerPage;
-  //     const endIndex = startIndex + messagesPerPage;
-  //     const paginatedMessages = fetchedMessages.slice(startIndex, endIndex);
-  //
-  //     setMessages((prev) =>
-  //       pageNumber === 1
-  //         ? [...paginatedMessages].reverse()
-  //         : [...paginatedMessages.reverse(), ...prev]
-  //     );
-  //     setHasMoreMessages(fetchedMessages.length > endIndex);
-  //     setPage(pageNumber);
-  //   } catch (error) {
-  //     console.error('Error fetching messages:', error);
-  //   } finally {
-  //     setIsLoadingMessages(false);
-  //   }
-  // };
-
-  // // Handle scroll for pagination
-  // useEffect(() => {
-  //   const container = messagesContainerRef.current;
-  //   if (!container) return;
-  //
-  //   const handleScroll = () => {
-  //     if (container.scrollTop === 0 && hasMoreMessages && !isLoadingMessages) {
-  //       loadMessages(currentConversationId!, page + 1);
-  //     }
-  //   };
-  //
-  //   container.addEventListener('scroll', handleScroll);
-  //   return () => container.removeEventListener('scroll', handleScroll);
-  // }, [hasMoreMessages, isLoadingMessages, page, currentConversationId]);
-
-  // Initialize WaveSurfer for audio messages
-  // useEffect(() => {
-  //   messages.forEach((message) => {
-  //     if(!message) return
-  //     if (message.content && message.content.startsWith('data:audio')) {
-  //       const waveformElement = document.getElementById(
-  //         `waveform-${message.id}`
-  //       );
-  //       const audioElement = document.getElementById(
-  //         `audio-${message.id}`
-  //       ) as HTMLAudioElement;
-  //
-  //       if (
-  //         waveformElement &&
-  //         audioElement &&
-  //         !wavesurferInstances.current[message.id]
-  //       ) {
-  //         const wavesurfer = WaveSurfer.create({
-  //           container: `#waveform-${message.id}`,
-  //           waveColor: '#d946ef',
-  //           progressColor: '#c026d3',
-  //           cursorColor: 'transparent',
-  //           barWidth: 2,
-  //           barRadius: 1,
-  //           barGap: 2,
-  //           height: 40,
-  //           responsive: true,
-  //           hideScrollbar: true,
-  //           normalize: true,
-  //           backend: 'MediaElement',
-  //           media: audioElement,
-  //         });
-  //
-  //         wavesurfer.on('ready', () => {
-  //           waveformElement.dataset.initialized = 'true';
-  //         });
-  //
-  //         wavesurfer.on('play', () => {
-  //           setPlayingStates((prev) => ({ ...prev, [message.id]: true }));
-  //         });
-  //
-  //         wavesurfer.on('pause', () => {
-  //           setPlayingStates((prev) => ({ ...prev, [message.id]: false }));
-  //         });
-  //
-  //         wavesurfer.on('finish', () => {
-  //           setPlayingStates((prev) => ({ ...prev, [message.id]: false }));
-  //         });
-  //
-  //         wavesurferInstances.current[message.id] = wavesurfer;
-  //       }
-  //     }
-  //   });
-  //
-  //   return () => {
-  //     Object.values(wavesurferInstances.current).forEach((wavesurfer) => {
-  //       wavesurfer.destroy();
-  //     });
-  //     wavesurferInstances.current = {};
-  //   };
-  // }, [messages]);
-
+  }, [messagesEndRef, isTyping]);
   // Start recording
   const startRecording = async () => {
-
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setAudioStream(stream);
@@ -365,21 +268,22 @@ export default function CharacterChatTemplate({
 
   // Send text message
   const handleSendMessage = async () => {
-
     if (messageText.trim() === '') return;
     const userMessageId = v4();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: userMessageId,
-        text: messageText,
-        sender: 'user',
-        time: getCurrentTime(),
-      },
-    ]);
+
+    // Добавляем сообщение пользователя локально
+    const newUserMessage: Message = {
+      id: userMessageId,
+      text: messageText,
+      sender: 'user',
+      time: getCurrentTime(),
+    };
+
+    setMessages((prev) => [...prev, newUserMessage]);
 
     try {
       setIsTyping(true);
+
       const chatRequest: ChatRequest = {
         agentId: character.id,
         message: messageText,
@@ -391,38 +295,39 @@ export default function CharacterChatTemplate({
         ? await chatService.sendMessage(chatRequest)
         : await chatService.sendPublicMessage(chatRequest);
 
-      if(response?.error && response?.status === 429){
+      if (response?.error && response?.status === 429) {
         openModal({
           type: 'message',
           content: (
-            <AuthModal
-              initialMode="signup"
-              onClose={() => closeModal()}
-            />
+            <AuthModal initialMode="signup" onClose={() => closeModal()} />
           ),
-        })
-        setIsTyping(false)
+        });
+        setIsTyping(false);
         return;
       }
 
       const messageId = v4();
 
       if (response.message) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: messageId,
-            text: response.message,
-            sender: 'agent',
-            time: formatDate(response.timestamp),
-            image: response?.metadata?.content
-              ? response.metadata.content.url
-              : undefined,
-          },
-        ]);
+        const newAgentMessage: Message = {
+          id: messageId,
+          text: response.message,
+          sender: 'agent',
+          time: formatDate(response.timestamp),
+          ...(response?.metadata?.content && {
+            media: {
+              url: response?.metadata?.content?.url,
+              type: response?.metadata?.content.mimeType,
+              price: response?.metadata?.content.price,
+            },
+          }),
+        };
 
+        setMessages((prev) => [...prev, newAgentMessage]);
         setIsTyping(false);
+        scrollToBottom();
       }
+
       if (response.conversationId && !currentConversationId) {
         setCurrentConversationId(response.conversationId);
       }
@@ -432,40 +337,17 @@ export default function CharacterChatTemplate({
         type: 'message',
         content: <div>Error sending message. Please try again.</div>,
       });
+      setIsTyping(false);
     }
   };
 
   const handleRequestPhoto = () => {
-
     setShowPaywall(true);
   };
 
   const handlePurchaseContent = async () => {
     setShowPaywall(false);
-
-    if (!currentConversationId) return;
-
-    // try {
-    //   const photoMessage: ChatRequest = {
-    //     agentId: character.id,
-    //     message: `Image: ${character.image}`,
-    //     conversationId: currentConversationId,
-    //   };
-    //   const response = await chatService.sendMessage(photoMessage);
-    //   setMessages((prev) => [...prev, response.message]);
-    //
-    //   setTimeout(async () => {
-    //     const followUpMessage: ChatRequest = {
-    //       agentId: character.id,
-    //       message: 'What do you think? 😘',
-    //       conversationId: currentConversationId,
-    //     };
-    //     const followUpResponse = await chatService.sendMessage(followUpMessage);
-    //     setMessages((prev) => [...prev, followUpResponse.message]);
-    //   }, 1000);
-    // } catch (error) {
-    //   console.error('Error sending photo message:', error);
-    // }
+    // Остальная логика...
   };
 
   const toggleOptions = () => {
@@ -480,9 +362,7 @@ export default function CharacterChatTemplate({
     <div
       className={`h-screen flex ${isMobile ? 'flex-col' : 'mx-auto'} bg-black text-white`}
     >
-      <div
-        className={`flex h-[100%] w-full rounded-xl overflow-hidden`}
-      >
+      <div className={`flex h-[100%] w-full rounded-xl overflow-hidden`}>
         <div className="w-full flex flex-col">
           <ChatHeader
             character={character}
@@ -499,8 +379,11 @@ export default function CharacterChatTemplate({
               character={character}
               messagesEndRef={messagesEndRef}
               isTyping={isTyping}
+              isLoadingMore={isLoadingMore}
+              hasMore={hasMore}
               playingStates={playingStates}
               togglePlayPause={togglePlayPause}
+              onScroll={handleScroll}
               isMobile={isMobile}
             />
           </div>

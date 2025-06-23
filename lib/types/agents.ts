@@ -5,8 +5,16 @@ export interface AgentCreateRequest {
   configuration?: Record<string, number>;
 }
 
-interface PublicContent{
-   image: string
+interface PublicContent {
+  createdAt: string;
+  fileSize: string;
+  mimeType: string;
+  url: string;
+  name: string;
+  meta:{
+    isPublic?: boolean;
+    currency: string;
+  }
 }
 
 interface Meta {

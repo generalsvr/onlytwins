@@ -9,5 +9,5 @@ interface ChatPageProps {
 
 export default async function ChatLayout({}: ChatPageProps) {
   const data = await getConversationsSSR();
-  return <ChatPage conversations={data.conversations} error={data.error} />;
+  return <ChatPage initialConversations={data.conversations} error={data.error} />;
 }

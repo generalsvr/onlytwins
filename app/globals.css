@@ -53,6 +53,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #f1f1f1;
 }
 
 /* Responsive typography */
@@ -71,6 +73,23 @@ body {
 
   p {
     @apply text-sm md:text-base;
+  }
+  /* В вашем глобальном CSS-файле */
+  ::-webkit-scrollbar {
+    width: 8px; /* Ширина скроллбара */
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1; /* Цвет фона трека */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #4b5563; /* Цвет ползунка (например, gray-600 из Tailwind) */
+    border-radius: 4px; /* Скругление углов */
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #374151; /* Цвет ползунка при наведении (например, gray-700) */
   }
 }
 

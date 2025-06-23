@@ -199,7 +199,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
             </div>
           </div>
 
-          <div className={`p-6 pt-6 ${isMobile && 'w-full'}`}>
+          <div className={`p-6 pt-6 pb-0 ${isMobile && 'w-full'}`}>
             {/* Error Message */}
             <AnimatePresence>
               {error && (

@@ -14,6 +14,7 @@ import {
   DollarSign,
   User,
   LucideProps,
+  Construction,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/contexts/theme-context';
@@ -32,6 +33,7 @@ interface NavItem {
   path: string;
   isAuth?: boolean;
   badge?: number;
+  inDev?: boolean; // Новый флаг для элементов в разработке
 }
 
 export default function MainNavigation() {
@@ -41,6 +43,7 @@ export default function MainNavigation() {
 
   const navItems: NavItem[] = [
     { id: 'feed', icon: Home, label: 'Feed', path: '/' },
+    { id: 'explore', icon: Search, label: 'Explore', path: '/explore' },
     {
       id: 'chats',
       icon: MessageCircle,
@@ -52,6 +55,7 @@ export default function MainNavigation() {
     {
       id: 'earn',
       icon: DollarSign,
+      inDev: true,
       label: 'Earn',
       path: '/earn',
       isAuth: true,
@@ -80,7 +84,8 @@ export default function MainNavigation() {
       ) as HTMLButtonElement;
 
       if (activeButton && indicatorRef.current) {
-        const { offsetTop, offsetLeft, offsetHeight, offsetWidth } = activeButton;
+        const { offsetTop, offsetLeft, offsetHeight, offsetWidth } =
+          activeButton;
 
         if (isMobile) {
           // Mobile: horizontal indicator
@@ -104,6 +109,10 @@ export default function MainNavigation() {
   }, [activePage, isMobile]);
 
   const handleNavigate = (item: NavItem) => {
+    // Блокируем навигацию для элементов в разработке
+    if (item.inDev) {
+      return;
+    }
 
     if (!isAuthenticated && item.isAuth) {
       openModal({
@@ -117,7 +126,10 @@ export default function MainNavigation() {
   };
 
   const isActive = (item: NavItem) => {
-    return activePage === item.id || (item.id === 'chats' && pathname.includes('chat/'));
+    return (
+      activePage === item.id ||
+      (item.id === 'chats' && pathname.includes('chat/'))
+    );
   };
 
   return (
@@ -125,9 +137,10 @@ export default function MainNavigation() {
       ref={navRef}
       className={`
           ${isMobile ? 'fixed left-0 right-0 bottom-0' : 'absolute-center-right'}  z-50 bg-zinc-900/60 backdrop-blur-xl border border-zinc-700/30 shadow-2xl
-          ${isMobile
-        ? 'h-16 rounded-2xl flex justify-around items-center'
-        : 'top-1/2 right-6 transform -translate-y-1/2 w-20 rounded-2xl flex flex-col justify-center items-center py-4'
+          ${
+        isMobile
+          ? 'h-16 rounded-2xl flex justify-around items-center'
+          : 'top-1/2 right-6 transform -translate-y-1/2 w-20 rounded-2xl flex flex-col justify-center items-center py-4'
       }
         `}
     >
@@ -143,13 +156,16 @@ export default function MainNavigation() {
 
       {navItems.map((item, index) => {
         const active = isActive(item);
-        const disabled = item.isAuth && !isAuthenticated;
-
+        const disabled = (item.isAuth && !isAuthenticated) || item.inDev;
         return (
           <motion.button
             key={item.id}
             data-id={item.id}
-            data-active={item.id === 'chats' && pathname.includes('chat/') ? 'true' : 'false'}
+            data-active={
+              item.id === 'chats' && pathname.includes('chat/')
+                ? 'true'
+                : 'false'
+            }
             className={`
                 relative flex items-center justify-center transition-all duration-200
                 ${isMobile ? 'flex-col flex-1 h-full px-2' : 'w-full h-16 my-1'}
@@ -167,13 +183,16 @@ export default function MainNavigation() {
           >
             {/* Icon container */}
             <div className="relative">
-              <div className={`
+              <div
+                className={`
                   p-2 rounded-xl transition-all duration-200
-                  ${active
-                ? 'bg-gradient-to-r from-pink-500/20 to-purple-600/20 shadow-lg'
-                : 'group-hover:bg-zinc-700/50'
-              }
-                `}>
+                  ${
+                  active
+                    ? 'bg-gradient-to-r from-pink-500/20 to-purple-600/20 shadow-lg'
+                    : 'group-hover:bg-zinc-700/50'
+                }
+                `}
+              >
                 <item.icon size={isMobile ? 22 : 24} />
               </div>
 
@@ -186,12 +205,23 @@ export default function MainNavigation() {
                     exit={{ scale: 0 }}
                     className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg"
                   >
-                      <span className="text-xs font-bold text-white">
-                        {item.badge > 9 ? '9+' : item.badge}
-                      </span>
+                    <span className="text-xs font-bold text-white">
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Индикатор "в разработке" */}
+              {item.inDev && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full flex items-center justify-center shadow-lg"
+                >
+                  <Construction size={10} className="text-white" />
+                </motion.div>
+              )}
 
               {/* Glow effect for active item */}
               {active && (
@@ -200,21 +230,28 @@ export default function MainNavigation() {
             </div>
 
             {/* Label */}
-            <span className={`
+            <span
+              className={`
                 text-xs font-medium transition-all duration-200
                 ${isMobile ? 'mt-1' : 'hidden'}
                 ${active ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}
-              `}>
-                {item.label}
-              </span>
+              `}
+            >
+              {item.label}
+            </span>
 
             {/* Tooltip for desktop */}
             {!isMobile && (
               <div className="absolute right-full mr-4 px-3 py-2 bg-zinc-900/95 backdrop-blur-sm text-white text-sm rounded-lg shadow-lg border border-zinc-700/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                 {item.label}
-                {disabled && (
+                {disabled && !item.inDev && (
                   <div className="text-xs text-zinc-400 mt-1">
                     Login required
+                  </div>
+                )}
+                {item.inDev && (
+                  <div className="text-xs text-amber-400 mt-1">
+                    Coming Soon
                   </div>
                 )}
                 <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-zinc-900" />
@@ -222,7 +259,7 @@ export default function MainNavigation() {
             )}
 
             {/* Lock icon for auth-required items */}
-            {disabled && (
+            {disabled && !item.inDev && (
               <div className="absolute top-1 right-1 w-3 h-3 bg-zinc-600 rounded-full flex items-center justify-center">
                 <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full" />
               </div>
@@ -232,14 +269,15 @@ export default function MainNavigation() {
       })}
 
       {/* Bottom glow effect */}
-      <div className={`
+      <div
+        className={`
           absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/5 to-purple-500/5 pointer-events-none
           ${isMobile ? '' : ''}
-        `} />
+        `}
+      />
     </nav>
 
-  // {/* Mobile safe area */}
-  // {isMobile && <div className="h-4" />}
-
+    // {/* Mobile safe area */}
+    // {isMobile && <div className="h-4" />}
   );
 }

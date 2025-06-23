@@ -21,7 +21,11 @@ export const getAllPublicAgents = async (): Promise<AgentResponse[]> => {
   return response.data;
 };
 export const getAgent = async (agentId: number): Promise<AgentResponse> => {
-  const response = await serverApi.get<AgentResponse>(`/agents/${agentId}`);
+  const response = await serverApi.get<AgentResponse>(`/agents/${agentId}`,{
+    params:{
+      "include_private_content": true
+    }
+  });
   return response.data;
 };
 export const getPublicAgent = async (

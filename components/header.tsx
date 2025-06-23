@@ -10,6 +10,9 @@ import { useModalStore } from '@/lib/stores/modalStore';
 import AuthModal from '@/components/auth/auth-modal';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import Image from 'next/image';
+import PaymentPage from '@/components/payment-page';
+import PaymentModal from '@/components/modals/payment';
+import TokensModal from '@/components/modals/tokens';
 
 interface HeaderProps {
   title?: string;
@@ -139,10 +142,13 @@ export default function Header({
 
             {/* Credits Display */}
             {isAuthenticated && (
-              <div className="flex items-center bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20 rounded-full px-4 py-2">
+              <div  onClick={() => openModal({
+                type: 'message',
+                content: <TokensModal/>,
+              })} className="flex items-center bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20 rounded-full px-4 py-2">
                 <CreditCard size={16} className="text-pink-400 mr-2" />
                 <span className="text-sm font-medium text-white">
-                  {user?.credits || 0} credits
+                  {user?.credits || 0} tokens
                 </span>
               </div>
             )}
@@ -162,6 +168,7 @@ export default function Header({
                 >
                   Get Started
                 </button>
+
               </div>
             )}
           </div>

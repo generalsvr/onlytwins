@@ -8,27 +8,82 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface MessageListProps {
   messages: Message[];
   isTyping: boolean;
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
   character: AgentResponse;
   togglePlayPause: (messageId: number) => void;
   playingStates: { [key: number]: boolean };
   messagesEndRef: RefObject<HTMLDivElement | null>;
+  onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
   isMobile: boolean;
 }
 
 export default function MessageList({
   messages,
   isTyping,
+  isLoadingMore = false,
+  hasMore = false,
   character,
   togglePlayPause,
   playingStates,
   messagesEndRef,
-  isMobile
+  onScroll,
+  isMobile,
 }: MessageListProps) {
   return (
-    <div className={`flex-1 h-[100%] py-32 overflow-y-auto hide-scrollbar ${isMobile ? 'w-[100%]' : 'w-[90%]'}  mx-auto`}>
+    <div
+      className={`flex-1 h-[100%] py-32 overflow-y-auto hide-scrollbar ${isMobile ? 'w-[100%]' : 'w-[90%]'}  mx-auto`}
+      onScroll={onScroll}
+    >
+      <div className="relative space-y-6 px-4 py-8">
+        {/* Индикатор загрузки старых сообщений */}
+        <AnimatePresence>
+          {isLoadingMore && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="flex justify-center py-4"
+            >
+              <div className="flex items-center space-x-2 text-zinc-400">
+                <div className="flex space-x-1">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-2 h-2 bg-zinc-400 rounded-full"
+                      animate={{
+                        y: [-2, -6, -2],
+                        opacity: [0.5, 1, 0.5],
+                      }}
+                      transition={{
+                        duration: 1.4,
+                        repeat: Infinity,
+                        delay: i * 0.2,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm">Loading older messages...</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
+        {/* Сообщение о том, что это начало беседы */}
+        {!hasMore && messages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex justify-center py-4"
+          >
+            <div className="text-zinc-500 text-sm bg-zinc-800/50 px-4 py-2 rounded-full">
+              Beginning of conversation
+            </div>
+          </motion.div>
+        )}
 
-      <div className="relative  space-y-6 px-4 py-8">
         {/* Welcome message */}
         {messages.length === 0 && (
           <motion.div
@@ -43,9 +98,8 @@ export default function MessageList({
                   ''
                 }
                 alt={character.name}
-                className="object-cover"
+                className="object-cover w-full h-full"
               />
-
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">
               Chat with {character.name}

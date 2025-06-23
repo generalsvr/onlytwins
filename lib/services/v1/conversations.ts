@@ -2,11 +2,22 @@ import { clientApi } from '@/lib/clientApi';
 import { ChatMessage, ConversationSummary } from '@/lib/types/chat';
 
 export const conversationService = {
-  // Get conversation history
-  async getConversationHistory(conversationId: string): Promise<ChatMessage[]> {
-    const response = await clientApi.get<ChatMessage[]>(
-      `/conversations/${conversationId}`
-    );
+  async getConversationHistory(
+    conversationId: string,
+    limit: number = 10,
+    offset: number = 0
+  ): Promise<ChatMessage[]> {
+    const response = await clientApi.get<{
+      messages: ChatMessage[];
+      hasMore: boolean;
+      total: number;
+    }>(`/conversations/${conversationId}`, {
+      params: {
+        limit,
+        offset,
+        sort_order: 'desc'
+      },
+    });
     return response.data;
   },
 
@@ -19,15 +30,17 @@ export const conversationService = {
   },
   async getUserConversations(
     userId: number,
-    agentId?: number
+    agentId?: number,
+    limit: number = 10,
+    offset: number = 0
   ): Promise<ConversationSummary[]> {
     const response = await clientApi.get<ConversationSummary[]>(
       `/conversations/users/${userId}`,
       {
         params: {
           ...(agentId && { agent_id: agentId }),
-          limit: 20,
-          offset: 0,
+          limit,
+          offset,
           sort_by: 'last_activity',
           sort_order: 'desc',
         },

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useClickOutside } from 'next/dist/client/components/react-dev-overlay/ui/components/errors/dev-tools-indicator/utils';
 import useWindowSize from '@/lib/hooks/useWindowSize';
+import { X } from 'lucide-react';
 
 export default function Modal() {
   const { isOpen, type, props, closeModal, content } = useModalStore();
@@ -39,17 +40,17 @@ export default function Modal() {
     };
   }, [isOpen]);
   if (!isOpen || !mounted) return null;
-
+  // bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl
   return createPortal(
     <div className="fixed w-screen h-screen inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div ref={modelRef} className={`relative ${isMobile ? 'w-full h-full'  : 'min-w-[320px]'}  `}>
-        <button className="absolute top-4 right-4 text-white z-20" onClick={closeModal}>
-          ✕
+      <div ref={modelRef} className={`relative ${isMobile ? 'w-full h-full' : 'min-w-[320px]'} h-max`}>
+        <button
+          onClick={closeModal}
+          className="absolute z-20 top-0 right-0 p-2 rounded-xl bg-zinc-800/50 hover:bg-zinc-700/50 transition-all duration-300 backdrop-blur-sm border border-zinc-700/50"
+        >
+        <X size={24} />
         </button>
-        <div className={'relative z-10 bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl overflow-hidden pb-6 h-full'}>
-          {content}
-        </div>
-
+        {content}
       </div>
     </div>,
     document.body

@@ -1,22 +1,37 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MessageCircle, Clock, Star } from 'lucide-react';
+import { Search, Filter, MessageCircle, Clock, Star, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConversationSummary } from '@/lib/types/chat';
+import { useConversations } from '@/lib/hooks/useConversations';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 interface ChatPageProps {
-  conversations: ConversationSummary[] | null;
+  initialConversations: ConversationSummary[] | null;
   error: Error | null;
+  pageSize?: number;
 }
 
-export default function ChatPage({ conversations, error }: ChatPageProps) {
+export default function ChatPage({ initialConversations, error: initialError, pageSize = 1 }: ChatPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
   const router = useRouter();
+  const user = useAuthStore(state => state.user);
+  console.log(initialConversations)
+  const {
+    conversations,
+    error: hookError,
+    hasMore,
+    loadMore,
+    isLoadingMore
+  } = useConversations(user?.id, undefined, {
+    initialData: initialConversations || [],
+    pageSize
+  });
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -28,15 +43,7 @@ export default function ChatPage({ conversations, error }: ChatPageProps) {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / 60000);
-
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return date.toLocaleDateString();
-  };
+  const displayError = initialError || hookError;
 
   const filteredConversations = conversations?.filter(chat =>
     chat.agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -123,7 +130,7 @@ export default function ChatPage({ conversations, error }: ChatPageProps) {
       {/* Content */}
       <div className="max-w-4xl mx-auto p-4">
         {/* Error State */}
-        {error && (
+        {displayError && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <MessageCircle size={32} className="text-red-400" />
@@ -132,13 +139,13 @@ export default function ChatPage({ conversations, error }: ChatPageProps) {
               Something went wrong
             </p>
             <p className="text-zinc-400">
-              {error.message}
+              {displayError.message}
             </p>
           </div>
         )}
 
         {/* Empty State */}
-        {!error && conversations && conversations.length === 0 && (
+        {!displayError && conversations && conversations.length === 0 && (
           <div className="text-center py-12">
             <div className="w-20 h-20 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
               <MessageCircle size={40} className="text-zinc-400" />
@@ -156,7 +163,7 @@ export default function ChatPage({ conversations, error }: ChatPageProps) {
         )}
 
         {/* Chat List */}
-        {!error && filteredConversations && filteredConversations.length > 0 && (
+        {!displayError && filteredConversations && filteredConversations.length > 0 && (
           <div className="space-y-3">
             {filteredConversations.map((chat, index) => (
               <div
@@ -227,28 +234,44 @@ export default function ChatPage({ conversations, error }: ChatPageProps) {
                       </span>
                     </div>
                   </div>
-
-                  {/* Unread indicator (if needed) */}
-                  {/* Uncomment when you have unread status
-                  {chat.unreadCount > 0 && (
-                    <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-medium text-white">
-                        {chat.unreadCount}
-                      </span>
-                    </div>
-                  )}
-                  */}
                 </div>
 
                 {/* Hover effect overlay */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
               </div>
             ))}
+
+            {/* Load More Button */}
+            {hasMore && !searchQuery && (
+              <div className="flex justify-center pt-6">
+                <button
+                  onClick={loadMore}
+                  disabled={isLoadingMore}
+                  className={`
+                    px-8 py-3 rounded-xl font-medium transition-all duration-200
+                    ${isLoadingMore
+                    ? 'bg-zinc-800/50 text-zinc-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-pink-500/20 to-purple-600/20 text-white hover:from-pink-500/30 hover:to-purple-600/30 border border-pink-500/30 hover:border-pink-400/50'
+                  }
+                    backdrop-blur-sm
+                  `}
+                >
+                  {isLoadingMore ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Loading...</span>
+                    </div>
+                  ) : (
+                    'Load More'
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* No search results */}
-        {!error && searchQuery && filteredConversations?.length === 0 && (
+        {!displayError && searchQuery && filteredConversations?.length === 0 && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
               <Search size={32} className="text-zinc-400" />

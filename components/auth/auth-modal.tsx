@@ -23,7 +23,7 @@ export default function AuthModal({
   return (
     <div className={'h-full'} >
       <div
-        className={` ${isMobile ? 'w-full' : 'min-w-[420px]'}  h-full `}
+        className={` ${isMobile ? 'w-full' : 'min-w-[420px]'}  h-max bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl`}
       >
         <AnimatePresence mode="wait" initial={false}>
           {mode === 'login' ? (
@@ -35,7 +35,7 @@ export default function AuthModal({
               transition={{ duration: 0.2 }}
             >
               <LoginForm onClose={onClose} />
-              <div className="mt-6 text-center text-zinc-400 text-sm">
+              <div className="mt-6 mb-6 text-center text-zinc-400 text-sm">
                 Don't have an account?{' '}
                 <button
                   onClick={() => setMode('signup')}
@@ -54,7 +54,7 @@ export default function AuthModal({
               transition={{ duration: 0.2 }}
             >
               <SignupForm onClose={onClose} />
-              <div className="mt-6 text-center text-zinc-400 text-sm">
+              <div className="mt-6 mb-6 text-center text-zinc-400 text-sm">
                 Already have an account?{' '}
                 <button
                   onClick={() => setMode('login')}

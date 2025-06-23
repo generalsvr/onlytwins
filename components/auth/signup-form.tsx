@@ -277,7 +277,7 @@ export default function SignupForm({ onClose }: SignupFormProps) {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-6 pb-0">
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-pink-500/25">

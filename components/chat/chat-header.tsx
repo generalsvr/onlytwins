@@ -116,16 +116,6 @@ export default function ChatHeader({
                 <Star size={16} className="text-yellow-400 flex-shrink-0" />
               </div>
               <div className="flex items-center space-x-2">
-                <p className="text-xs text-zinc-400 truncate">
-                  {isOnline ? (
-                    <span className="flex items-center space-x-1">
-                      <div className="w-2 h-2 bg-green-400 rounded-full" />
-                      <span>{lastSeen}</span>
-                    </span>
-                  ) : (
-                    lastSeen
-                  )}
-                </p>
               </div>
             </div>
           </div>
