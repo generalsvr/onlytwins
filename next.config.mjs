@@ -3,6 +3,9 @@ const nextConfig = {
   allowedDevOrigins: [
     "onlytwins.jundev.tech"
   ],
+  experimental:{
+    serverActions: true
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },

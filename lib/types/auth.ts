@@ -29,6 +29,10 @@ export interface UserResponse {
   isActive: boolean;
   isVerified: boolean;
   createdAt: string;
+  balances: {
+    oTT: number;
+    uSD: number;
+  };
 }
 
 export interface AuthResponse {

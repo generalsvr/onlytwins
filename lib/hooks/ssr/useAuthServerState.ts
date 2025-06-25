@@ -36,6 +36,7 @@ export default async function useAuthServerState(): Promise<AuthServerResponse> 
     }
 
     const user = await authServerService.getCurrentUser();
+
     return {
       user,
       isAuthenticated: true,
@@ -46,6 +47,7 @@ export default async function useAuthServerState(): Promise<AuthServerResponse> 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error: Error) {
+    console.log(error)
     return {
       user: null,
       isAuthenticated: false,

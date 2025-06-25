@@ -87,7 +87,7 @@ export default function ModelsPage() {
         {models.map((model) => (
           <Link
             key={model.id}
-            href={`/character/${model.id}`}
+            href={`/app/%5Blocale%5D/character/${model.id}`}
             className="block"
           >
             <div className="bg-zinc-900 rounded-xl overflow-hidden">

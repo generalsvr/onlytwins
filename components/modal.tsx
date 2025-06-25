@@ -46,7 +46,7 @@ export default function Modal() {
       <div ref={modelRef} className={`relative ${isMobile ? 'w-full h-full' : 'min-w-[320px]'} h-max`}>
         <button
           onClick={closeModal}
-          className="absolute z-20 top-0 right-0 p-2 rounded-xl bg-zinc-800/50 hover:bg-zinc-700/50 transition-all duration-300 backdrop-blur-sm border border-zinc-700/50"
+          className="absolute z-20 top-3 right-3 p-2 rounded-xl bg-zinc-800/50 hover:bg-zinc-700/50 transition-all duration-300 backdrop-blur-sm border border-zinc-700/50"
         >
         <X size={24} />
         </button>

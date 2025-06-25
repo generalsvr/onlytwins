@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import { AgentResponse } from '@/lib/types/agents';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import AgentCard from '@/components/full-screen-feed';
+import { useLocale } from '@/contexts/LanguageContext';
 
 interface DesktopAgentFeedProps {
   agents: AgentResponse[];
@@ -47,10 +48,67 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
   const [showVideo, setShowVideo] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const { isMobile } = useWindowSize();
+  const { locale, dictionary } = useLocale();
 
   const currentVideoRef = useRef<HTMLVideoElement>(null);
   const loadingControllerRef = useRef<AbortController | null>(null);
   const router = useRouter();
+
+  // Получаем переводы для текущей локали
+  const t = useMemo(() => {
+    return dictionary
+  }, [locale]);
+
+  // Функция для форматирования даты с учетом локали
+  const formatDate = useCallback(
+    (date: string | Date, locale: string) => {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (!dateObj || isNaN(dateObj.getTime())) {
+        return '';
+      }
+      if (locale === 'zh') {
+        const year = dateObj.getFullYear();
+        const month = dateObj.getMonth() + 1;
+        return `${year}年${month}月`;
+      } else if (locale === 'ru') {
+        const monthNames = Object.values(t.months);
+        const month = monthNames[dateObj.getMonth()];
+        const year = dateObj.getFullYear();
+        return `${month} ${year}`;
+      } else {
+        const monthNames = Object.values(t.months);
+        const month = monthNames[dateObj.getMonth()];
+        const year = dateObj.getFullYear();
+        return `${month} ${year}`;
+      }
+    },
+    [t.months]
+  );
+
+  // Функция для получения правильной формы "лет" в русском языке
+  const getAgeText = useCallback(
+    (age: number, locale: string) => {
+      if (locale === 'ru') {
+        const lastDigit = age % 10;
+        const lastTwoDigits = age % 100;
+
+        if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+          return `${age} лет`;
+        } else if (lastDigit === 1) {
+          return `${age} год`;
+        } else if (lastDigit >= 2 && lastDigit <= 4) {
+          return `${age} года`;
+        } else {
+          return `${age} лет`;
+        }
+      } else if (locale === 'zh') {
+        return `${age}${t.common.yearsOld}`;
+      } else {
+        return `${age} ${t.common.yearsOld}`;
+      }
+    },
+    [t.common.yearsOld]
+  );
 
   // Current selected agent
   const selectedAgent = useMemo(
@@ -122,7 +180,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
         video.preload = 'metadata';
         video.loop = true;
 
-        const fullVideoUrl = `${process.env.NEXT_PUBLIC_MEDIA_URL}/${videoUrl}`;
+        const fullVideoUrl = `${videoUrl}`;
 
         return new Promise<HTMLVideoElement>((resolve, reject) => {
           const handleLoadedData = () => {
@@ -387,6 +445,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
   if (isMobile) {
     return <AgentCard agents={agents} />;
   }
+
   return (
     <div className="h-max mx-auto max-w-5xl relative">
       {/* Agent Navigation Arrows - Outside the main content */}
@@ -400,6 +459,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
             whileTap={{ scale: 0.9 }}
             onClick={goToPreviousAgent}
             className="absolute -left-40 top-1/2 transform -translate-y-1/2 z-50 p-4 rounded-full bg-black/70 backdrop-blur-sm border border-white/20 hover:bg-black/80 transition-all group"
+            aria-label={t.actions.previousAgent}
           >
             <ChevronLeft
               size={32}
@@ -419,6 +479,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
             whileTap={{ scale: 0.9 }}
             onClick={goToNextAgent}
             className="absolute -right-40 top-1/2 transform -translate-y-1/2 z-50 p-4 rounded-full bg-black/70 backdrop-blur-sm border border-white/20 hover:bg-black/80 transition-all group"
+            aria-label={t.actions.nextAgent}
           >
             <ChevronRight
               size={32}
@@ -431,9 +492,9 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
       {/* Main Content */}
       <div className="flex h-[calc(100vh-200px)]">
         {/* Center Panel - Media Section */}
-        <div className="flex-1 relative bg-black h-max ">
+        <div className="flex-1 relative bg-black h-max">
           {/* Image/Video Display */}
-          <div className="relative  h-[calc(100vh-200px)] ">
+          <div className="relative h-[calc(100vh-200px)]">
             {/* Always show image first */}
             {currentImages[currentImageIndex] && (
               <motion.img
@@ -441,9 +502,9 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                src={`${process.env.NEXT_PUBLIC_MEDIA_URL}/${currentImages[currentImageIndex]}`}
+                src={`${currentImages[currentImageIndex]}`}
                 alt={selectedAgent.name}
-                className="object-cover w-full h-full rounded-xl "
+                className="object-cover w-full h-full rounded-xl"
               />
             )}
 
@@ -471,7 +532,10 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
           </div>
 
           {/* Media Controls */}
-          <div className="absolute top-6 right-6 flex items-center space-x-3 z-20">
+          <div
+            className="absolute top-6 right-6 flex items-center space-x-3 z-20"
+            aria-label={t.labels.mediaControls}
+          >
             {/* Video Controls */}
             {currentVideoUrl && !videoError.has(currentVideoKey || '') && (
               <div className="flex items-center space-x-2">
@@ -479,6 +543,9 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                   whileTap={{ scale: 0.8 }}
                   onClick={togglePlayPause}
                   className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20"
+                  aria-label={
+                    isPlaying ? t.actions.pauseVideo : t.actions.playVideo
+                  }
                 >
                   {isPlaying ? (
                     <Pause size={20} className="text-white" />
@@ -492,6 +559,9 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                     whileTap={{ scale: 0.8 }}
                     onClick={toggleMute}
                     className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20"
+                    aria-label={
+                      isMuted ? t.actions.unmuteVideo : t.actions.muteVideo
+                    }
                   >
                     {isMuted ? (
                       <VolumeX size={20} className="text-white" />
@@ -508,6 +578,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
               whileTap={{ scale: 0.8 }}
               onClick={() => handleLike(selectedAgent.id)}
               className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20"
+              aria-label={t.actions.likeProfile}
             >
               <Heart
                 size={20}
@@ -523,7 +594,10 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
           {/* Image Navigation - Only for images */}
           {currentImages.length > 1 && (
             <>
-              <div className="absolute top-6 left-6 flex space-x-1 z-20">
+              <div
+                className="absolute top-6 left-6 flex space-x-1 z-20"
+                aria-label={t.labels.imageNavigation}
+              >
                 {currentImages.map((_, index) => (
                   <div
                     key={index}
@@ -533,6 +607,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                         : 'bg-white/30 hover:bg-white/50'
                     }`}
                     onClick={() => setCurrentImageIndex(index)}
+                    aria-label={`${t.labels.imageNavigation} ${index + 1}`}
                   />
                 ))}
               </div>
@@ -541,6 +616,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                 <button
                   onClick={() => setCurrentImageIndex((prev) => prev - 1)}
                   className="absolute left-6 bottom-1/3 transform translate-y-1/2 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 z-20 hover:bg-black/70 transition-all"
+                  aria-label={t.actions.previousImage}
                 >
                   <ChevronLeft size={20} className="text-white" />
                 </button>
@@ -550,6 +626,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                 <button
                   onClick={() => setCurrentImageIndex((prev) => prev + 1)}
                   className="absolute right-6 bottom-1/3 transform translate-y-1/2 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 z-20 hover:bg-black/70 transition-all"
+                  aria-label={t.actions.nextImage}
                 >
                   <ChevronRight size={20} className="text-white" />
                 </button>
@@ -573,7 +650,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                   <div className="flex items-center space-x-4 text-white/80">
                     <div className="flex items-center space-x-1">
                       <Calendar size={16} />
-                      <span>{selectedAgent.meta.age} years old</span>
+                      <span>{getAgeText(selectedAgent.meta.age, locale)}</span>
                     </div>
                     {selectedAgent.meta.location && (
                       <div className="flex items-center space-x-1">
@@ -590,27 +667,32 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push(`/chat/${selectedAgent.id}`)}
+                  onClick={() =>
+                    router.push(`/${locale}/chat/${selectedAgent.id}`)
+                  }
                   className="px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-pink-500/25"
                 >
                   <MessageCircle size={18} className="inline mr-2" />
-                  Start Chat
+                  {t.actions.startChat}
                 </motion.button>
 
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push(`/character/${selectedAgent.id}`)}
+                  onClick={() =>
+                    router.push(`/${locale}/character/${selectedAgent.id}`)
+                  }
                   className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all duration-200"
                 >
                   <User size={18} className="inline mr-2" />
-                  View Profile
+                  {t.actions.viewProfile}
                 </motion.button>
 
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/20 transition-all duration-200"
+                  aria-label={t.actions.share}
                 >
                   <Share size={18} />
                 </motion.button>
@@ -621,11 +703,11 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
 
         {/* Right Panel - Info Panel */}
         <div className="w-96 bg-black/50 backdrop-blur-xl border-l border-white/10 overflow-y-auto ml-5">
-          <div className="p-6 space-y-6 max-h-[100%] overflow-scroll">
+          <div className="p-6 space-y-6 max-h-[100%] overflow-scroll hide-scrollbar">
             {/* Status */}
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-white font-medium">Online now</span>
+              <span className="text-white font-medium">{t.common.online}</span>
             </div>
 
             {/* Description */}
@@ -637,7 +719,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
               >
                 <h3 className="text-white font-semibold mb-3 flex items-center">
                   <Sparkles size={16} className="text-pink-400 mr-2" />
-                  About
+                  {t.common.about}
                 </h3>
                 <p className="text-white/80 leading-relaxed">
                   {selectedAgent.description}
@@ -647,7 +729,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
 
             {/* Details */}
             <div className="space-y-4">
-              <h3 className="text-white font-semibold">Details</h3>
+              <h3 className="text-white font-semibold">{t.common.details}</h3>
 
               {selectedAgent.meta.occupation && (
                 <div className="flex items-center space-x-3">
@@ -655,7 +737,9 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                     <span className="text-sm">💼</span>
                   </div>
                   <div>
-                    <p className="text-white/60 text-sm">Occupation</p>
+                    <p className="text-white/60 text-sm">
+                      {t.labels.occupation}
+                    </p>
                     <p className="text-white">
                       {selectedAgent.meta.occupation}
                     </p>
@@ -668,9 +752,9 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                   <Calendar size={14} className="text-pink-400" />
                 </div>
                 <div>
-                  <p className="text-white/60 text-sm">Age</p>
+                  <p className="text-white/60 text-sm">{t.labels.age}</p>
                   <p className="text-white">
-                    {selectedAgent.meta.age} years old
+                    {getAgeText(selectedAgent.meta.age, locale)}
                   </p>
                 </div>
               </div>
@@ -680,19 +764,33 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                   <span className="text-sm">⚧</span>
                 </div>
                 <div>
-                  <p className="text-white/60 text-sm">Gender</p>
+                  <p className="text-white/60 text-sm">{t.labels.gender}</p>
                   <p className="text-white capitalize">
                     {selectedAgent.meta.gender}
                   </p>
                 </div>
               </div>
+
+              {selectedAgent.meta.location && (
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <MapPin size={14} className="text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-white/60 text-sm">{t.labels.location}</p>
+                    <p className="text-white">{selectedAgent.meta.location}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Public Content */}
             {selectedAgent.meta.publicContent &&
               selectedAgent.meta.publicContent.length > 0 && (
                 <div>
-                  <h3 className="text-white font-semibold mb-3">Gallery</h3>
+                  <h3 className="text-white font-semibold mb-3">
+                    {t.common.gallery}
+                  </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {selectedAgent.meta.publicContent
                       .filter((item) => item.mimeType?.startsWith('image/'))
@@ -723,40 +821,44 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
 
             {/* Stats */}
             {/*<div className="border-t border-white/10 pt-6">*/}
-            {/*  <h3 className="text-white font-semibold mb-4">Stats</h3>*/}
+            {/*  <h3 className="text-white font-semibold mb-4">*/}
+            {/*    {t.common.stats}*/}
+            {/*  </h3>*/}
             {/*  <div className="space-y-3">*/}
             {/*    <div className="flex justify-between items-center">*/}
-            {/*      <span className="text-white/60">Profile Views</span>*/}
+            {/*      <span className="text-white/60">{t.common.profileViews}</span>*/}
             {/*      <span className="text-white font-medium">*/}
             {/*        {Math.floor(Math.random() * 1000) + 500}*/}
             {/*      </span>*/}
             {/*    </div>*/}
             {/*    <div className="flex justify-between items-center">*/}
-            {/*      <span className="text-white/60">Likes</span>*/}
+            {/*      <span className="text-white/60">{t.common.likes}</span>*/}
             {/*      <span className="text-white font-medium">*/}
             {/*        {Math.floor(Math.random() * 500) + 100}*/}
             {/*      </span>*/}
             {/*    </div>*/}
             {/*    <div className="flex justify-between items-center">*/}
-            {/*      <span className="text-white/60">Response Rate</span>*/}
+            {/*      <span className="text-white/60">{t.common.responseRate}</span>*/}
             {/*      <span className="text-green-400 font-medium">98%</span>*/}
             {/*    </div>*/}
             {/*    <div className="flex justify-between items-center">*/}
-            {/*      <span className="text-white/60">Joined</span>*/}
+            {/*      <span className="text-white/60">{t.common.joined}</span>*/}
             {/*      <span className="text-white font-medium">*/}
-            {/*        {new Date(selectedAgent.createdAt).toLocaleDateString(*/}
-            {/*          'en-US',*/}
-            {/*          {*/}
-            {/*            month: 'short',*/}
-            {/*            year: 'numeric',*/}
-            {/*          }*/}
-            {/*        )}*/}
+            {/*        {formatDate(selectedAgent.createdAt, locale)}*/}
             {/*      </span>*/}
             {/*    </div>*/}
             {/*  </div>*/}
             {/*</div>*/}
 
-            {/* Action Buttons - Sticky */}
+            {/* Loading indicator */}
+            {isVideoLoading && (
+              <div className="flex items-center justify-center p-4">
+                <div className="flex items-center space-x-2 text-white/60">
+                  <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                  <span>{t.common.loading}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import Button from '@/components/button';
 import { RotateCcw } from 'lucide-react';
 import { AgentResponse } from '@/lib/types/agents';
+import { useLocale } from '@/contexts/LanguageContext';
 
 interface FeedPageProps {
   agents: AgentResponse[] | null;
@@ -14,41 +15,56 @@ interface FeedPageProps {
 export default function ExplorePage({ agents }: FeedPageProps) {
   const videoRefs: MutableRefObject<(HTMLVideoElement | null)[]> = useRef([]);
   const router = useRouter();
-
+  const { locale } = useLocale();
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   useEffect(() => {
     videoRefs.current = videoRefs.current.slice(0, agents?.length || 0);
   }, [agents]);
 
   const handleMouseEnter = (index: number) => {
-    if (videoRefs.current[index]) {
-      videoRefs.current[index].play();
+    const video = videoRefs.current[index];
+    if (video) {
+      video.play().catch(error => {
+        console.warn('Video play failed:', error);
+      });
     }
   };
 
   const handleMouseLeave = (index: number) => {
-    if (videoRefs.current[index]) {
-      videoRefs.current[index].pause();
-      videoRefs.current[index].currentTime = 0;
+    const video = videoRefs.current[index];
+    if (video) {
+      video.pause();
+      video.currentTime = 0;
+      if(isSafari){
+        video.load();
+      }
     }
   };
 
-  // Touch handlers for mobile
+  // Touch handlers для мобильных устройств
   const handleTouchStart = (index: number) => {
-    if (videoRefs.current[index]) {
-      videoRefs.current[index].play();
+    const video = videoRefs.current[index];
+    if (video) {
+      video.play().catch(error => {
+        console.warn('Video play failed on touch:', error);
+      });
     }
   };
 
   const handleTouchEnd = (index: number) => {
-    if (videoRefs.current[index]) {
-      videoRefs.current[index].pause();
-      videoRefs.current[index].currentTime = 0;
+    const video = videoRefs.current[index];
+    if (video) {
+      video.pause();
+      video.currentTime = 0;
+      if(isSafari){
+        video.load();
+      }
     }
   };
 
   return (
     <div className="relative min-h-screen w-full">
-      <div className="px-4 sm:px-6  ">
+      <div className="px-4 sm:px-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center sm:text-left">
           Discover{' '}
           <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
@@ -58,7 +74,9 @@ export default function ExplorePage({ agents }: FeedPageProps) {
 
         {!agents && (
           <div className="flex flex-col items-center justify-center w-full mt-12 sm:mt-20 px-4">
-            <p className="text-lg sm:text-xl font-normal text-center">Something went wrong ...</p>
+            <p className="text-lg sm:text-xl font-normal text-center">
+              Something went wrong ...
+            </p>
             <Button
               className="mt-3"
               icon={<RotateCcw />}
@@ -79,7 +97,7 @@ export default function ExplorePage({ agents }: FeedPageProps) {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  router.push(`/character/${character.id}`);
+                  router.push(`/${locale}/character/${character.id}`);
                 }}
                 onMouseEnter={() => handleMouseEnter(index)}
                 onMouseLeave={() => handleMouseLeave(index)}
@@ -92,15 +110,17 @@ export default function ExplorePage({ agents }: FeedPageProps) {
                       ref={(el: HTMLVideoElement | null) => {
                         videoRefs.current[index] = el;
                       }}
-                      poster={`${process.env.NEXT_PUBLIC_MEDIA_URL}/${character.meta.profileImage}`}
+                      poster={`${character.meta.profileImage}`}
                       className="w-full h-full object-cover hide-play-button"
                       playsInline
                       muted
                       loop
                       controls={false}
+                      preload="none"
+                      onError={(e) => console.warn('Video error:', e)}
                     >
                       <source
-                        src={`${process.env.NEXT_PUBLIC_MEDIA_URL}/${character.meta.profileVideo}`}
+                        src={`${character.meta.profileVideo}`}
                         type="video/mp4"
                       />
                     </video>

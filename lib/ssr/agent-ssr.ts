@@ -9,6 +9,7 @@ export const getAgentsSSR = cache(async () => {
     const data = !authState.isAuthenticated
       ? await getAllPublicAgents()
       : await getAllAgents();
+
     return {
       data,
       error: null,

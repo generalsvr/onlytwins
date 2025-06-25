@@ -1,5 +1,7 @@
 import { billingService } from '@/lib/services/v1/billing';
-import { SessionResponse } from '@/lib/types/billing';
+import { CreateSubscriptionRequest, SessionResponse } from '@/lib/types/billing';
+import { PutTransactionRequest, PutTransactionResponse } from '@/lib/types/payments';
+import { paymentsService } from '@/lib/services/v1/payments';
 
 interface PaymentResponse {
   createPaymentLink: (
@@ -8,8 +10,19 @@ interface PaymentResponse {
     customerName: string,
     amount: number
   ) => Promise<SessionResponse>;
+  purchaseContent: (data: PutTransactionRequest) => Promise<PutTransactionResponse>;
+  purchaseSubscription: (data: CreateSubscriptionRequest) => Promise<SessionResponse>;
 }
-export const usePayment = (): PaymentResponse => {
+
+export const usePayment = (locale: string): PaymentResponse => {
+
+  const purchaseContent = async (data: PutTransactionRequest) => {
+      return await paymentsService.putTransaction(data)
+  }
+  const purchaseSubscription = async (data: CreateSubscriptionRequest) => {
+    return await billingService.createSubscription(data)
+  }
+
   const createPaymentLink = async (
     productName: string,
     customerEmail: string,
@@ -22,12 +35,14 @@ export const usePayment = (): PaymentResponse => {
       customer_email: customerEmail,
       customer_name: customerName,
       quantity: 1,
-      unit_amount: amount*100,
-      success_url:`${process.env.NEXT_PUBLIC_HOST_URL}?payment_status=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_HOST_URL}?payment_status=cancel`,
+      unit_amount: amount * 100,
+      success_url: `${process.env.NEXT_PUBLIC_HOST_URL}/${locale || 'en'}?payment_status=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_HOST_URL}/${locale || 'en'}?payment_status=failed`,
     });
   };
   return {
     createPaymentLink,
+    purchaseContent,
+    purchaseSubscription
   };
 };

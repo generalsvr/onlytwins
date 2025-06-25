@@ -53,7 +53,7 @@ clientApi.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as CustomAxiosRequestConfig;
     if (
-      error.response?.status === 401 &&
+      error.response?.status === 403 &&
       originalRequest &&
       !originalRequest._retry &&
       !originalRequest.url?.includes('/auth/refresh')

@@ -76,7 +76,7 @@ export default function MessageItem({
           >
             <img
               src={
-                `${process.env.NEXT_PUBLIC_MEDIA_URL}/${character.meta.profileImage}` ||
+                `${character.meta.profileImage}` ||
                 ''
               }
               alt={character.name}

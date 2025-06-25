@@ -6,6 +6,7 @@ import React, {
   JSX,
   ForwardRefExoticComponent,
   RefAttributes,
+  useMemo,
 } from 'react';
 import {
   Home,
@@ -23,6 +24,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import AuthModal from '@/components/auth/auth-modal';
 import { useModalStore } from '@/lib/stores/modalStore';
+import { useLocale } from '@/contexts/LanguageContext';
 
 interface NavItem {
   id: string;
@@ -33,22 +35,43 @@ interface NavItem {
   path: string;
   isAuth?: boolean;
   badge?: number;
-  inDev?: boolean; // Новый флаг для элементов в разработке
+  inDev?: boolean;
 }
 
 export default function MainNavigation() {
   const { isAuthenticated } = useAuthStore();
   const { isMobile } = useWindowSize();
   const { closeModal, openModal } = useModalStore((state) => state);
+  const { dictionary, locale } = useLocale();
 
-  const navItems: NavItem[] = [
-    { id: 'feed', icon: Home, label: 'Feed', path: '/' },
-    { id: 'explore', icon: Search, label: 'Explore', path: '/explore' },
+  // Helper function to create localized paths
+  const createLocalizedPath = (path: string) => {
+    // If path is root, just return the locale
+    if (path === '/') {
+      return `/${locale}`;
+    }
+    // For other paths, prepend with locale
+    return `/${locale}${path}`;
+  };
+
+  const navItems: NavItem[] = useMemo(() => [
+    {
+      id: 'feed',
+      icon: Home,
+      label: dictionary.navigation.feed,
+      path: createLocalizedPath('/')
+    },
+    {
+      id: 'explore',
+      icon: Search,
+      label: dictionary.navigation.explore,
+      path: createLocalizedPath('/explore')
+    },
     {
       id: 'chats',
       icon: MessageCircle,
-      label: 'Chat',
-      path: '/chats',
+      label: dictionary.navigation.chat,
+      path: createLocalizedPath('/chats'),
       isAuth: true,
       badge: 0, // Mock unread count
     },
@@ -56,26 +79,41 @@ export default function MainNavigation() {
       id: 'earn',
       icon: DollarSign,
       inDev: true,
-      label: 'Earn',
-      path: '/earn',
+      label: dictionary.navigation.earn,
+      path: createLocalizedPath('/earn'),
       isAuth: true,
     },
     {
       id: 'profile',
       icon: User,
-      label: 'Profile',
-      path: '/profile',
+      label: dictionary.navigation.profile,
+      path: createLocalizedPath('/profile'),
       isAuth: true,
     },
-  ];
+  ], [dictionary.navigation, locale]);
 
   const navRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
 
-  // Get the active page ID from the pathname
-  const activePage = pathname.split('/')[1] ? pathname.split('/')[1] : 'feed';
+  // Get the active page ID from the pathname, accounting for locale
+  const getActivePageId = () => {
+    // Remove locale from pathname for comparison
+    const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/';
+
+    if (pathWithoutLocale === '/') return 'feed';
+    if (pathWithoutLocale.startsWith('/explore')) return 'explore';
+    if (pathWithoutLocale.startsWith('/chat')) return 'chats';
+    if (pathWithoutLocale.startsWith('/earn')) return 'earn';
+    if (pathWithoutLocale.startsWith('/profile')) return 'profile';
+
+    // Default fallback
+    const segments = pathWithoutLocale.split('/').filter(Boolean);
+    return segments[0] || 'feed';
+  };
+
+  const activePage = getActivePageId();
 
   useEffect(() => {
     const updateIndicator = () => {
@@ -109,7 +147,7 @@ export default function MainNavigation() {
   }, [activePage, isMobile]);
 
   const handleNavigate = (item: NavItem) => {
-    // Блокируем навигацию для элементов в разработке
+    // Block navigation for items in development
     if (item.inDev) {
       return;
     }
@@ -212,7 +250,7 @@ export default function MainNavigation() {
                 )}
               </AnimatePresence>
 
-              {/* Индикатор "в разработке" */}
+              {/* Development indicator */}
               {item.inDev && (
                 <motion.div
                   initial={{ scale: 0 }}
@@ -246,12 +284,12 @@ export default function MainNavigation() {
                 {item.label}
                 {disabled && !item.inDev && (
                   <div className="text-xs text-zinc-400 mt-1">
-                    Login required
+                    {dictionary.navigation.loginRequired}
                   </div>
                 )}
                 {item.inDev && (
                   <div className="text-xs text-amber-400 mt-1">
-                    Coming Soon
+                    {dictionary.navigation.comingSoon}
                   </div>
                 )}
                 <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-zinc-900" />
@@ -276,8 +314,5 @@ export default function MainNavigation() {
         `}
       />
     </nav>
-
-    // {/* Mobile safe area */}
-    // {isMobile && <div className="h-4" />}
   );
 }

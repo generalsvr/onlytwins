@@ -16,6 +16,13 @@ interface PublicContent {
     currency: string;
   }
 }
+export interface PrivateContent {
+  currency: 'USD' | 'OTT';
+  id: number;
+  mimeType: 'string';
+  price: number;
+  url: string;
+}
 
 interface Meta {
   age: number;
@@ -32,6 +39,7 @@ interface Meta {
   profileVideo?: string;
   physicalDescription?: string;
   publicContent?: PublicContent[]; // Adjust type based on actual content structure if known
+  privateContent?: PrivateContent[];
 }
 
 export interface AgentResponse {

@@ -94,7 +94,7 @@ export default function MessageList({
             <div className="relative w-16 h-16 rounded-full overflow-hidden mb-4 ring-4 ring-pink-500/20">
               <img
                 src={
-                  `${process.env.NEXT_PUBLIC_MEDIA_URL}/${character.meta.profileImage}` ||
+                  `${character.meta.profileImage}` ||
                   ''
                 }
                 alt={character.name}
@@ -149,7 +149,7 @@ export default function MessageList({
               <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-pink-500/30">
                 <SafeImage
                   src={
-                    `${process.env.NEXT_PUBLIC_MEDIA_URL}/${character.meta.profileImage}` ||
+                    `${character.meta.profileImage}` ||
                     ''
                   }
                   alt={character.name}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '@/contexts/auth-context';
+
 import LoginForm from './login-form';
 import SignupForm from './signup-form';
 import useWindowSize from '@/lib/hooks/useWindowSize';
@@ -19,7 +19,7 @@ export default function AuthModal({
 }: AuthModalProps) {
   const { isMobile } = useWindowSize();
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
-  const { platform } = useAuth();
+
   return (
     <div className={'h-full'} >
       <div

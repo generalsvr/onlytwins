@@ -97,7 +97,7 @@ export default function ChatHeader({
               <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-pink-500/30 group-hover:ring-pink-500/50 transition-all duration-300">
                 <img
                   src={
-                    `${process.env.NEXT_PUBLIC_MEDIA_URL}/${character.meta.profileImage}` ||
+                    `${character.meta.profileImage}` ||
                     ''
                   }
                   alt={character.name}

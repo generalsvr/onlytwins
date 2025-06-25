@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,39 +24,7 @@ import { AuthError } from '@/lib/types/auth';
 import SocialAuth from '@/components/auth/social-auth';
 import Cookies from 'js-cookie';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Define the validation schema for signup form
-const signupSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address' }),
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters long' })
-    .regex(/[A-Z]/, {
-      message: 'Password must contain at least one uppercase letter',
-    })
-    .regex(/[a-z]/, {
-      message: 'Password must contain at least one lowercase letter',
-    })
-    .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
-  repeatPassword: z.string(),
-  firstName: z
-    .string()
-    .min(2, { message: 'First name must be at least 2 characters long' })
-    .max(50, { message: 'First name must be less than 50 characters' }),
-  lastName: z
-    .string()
-    .min(2, { message: 'Last name must be at least 2 characters long' })
-    .max(50, { message: 'Last name must be less than 50 characters' }),
-  referralCode: z
-    .string()
-    .regex(/^[A-Za-z0-9]{6,12}$/, {
-      message: 'Referral code must be 6-12 alphanumeric characters',
-    })
-    .optional(),
-}).refine((data) => data.password === data.repeatPassword, {
-  message: "Passwords don't match",
-  path: ["repeatPassword"],
-});
+import { useLocale } from '@/contexts/LanguageContext';
 
 interface SignupFormProps {
   onClose: () => void;
@@ -64,6 +32,35 @@ interface SignupFormProps {
 
 export default function SignupForm({ onClose }: SignupFormProps) {
   const { signup, platform } = useAuthStore();
+  const { dictionary, locale } = useLocale();
+
+  // Create localized validation schema
+  const signupSchema = useMemo(() => z.object({
+    email: z.string().email({ message: dictionary.auth.signup.errors.emailRequired }),
+    password: z
+      .string()
+      .min(8, { message: dictionary.auth.signup.errors.passwordMin })
+      .regex(/[A-Z]/, { message: dictionary.auth.signup.errors.passwordUppercase })
+      .regex(/[a-z]/, { message: dictionary.auth.signup.errors.passwordLowercase })
+      .regex(/[0-9]/, { message: dictionary.auth.signup.errors.passwordNumber }),
+    repeatPassword: z.string(),
+    firstName: z
+      .string()
+      .min(2, { message: dictionary.auth.signup.errors.firstNameMin })
+      .max(50, { message: dictionary.auth.signup.errors.firstNameMax }),
+    lastName: z
+      .string()
+      .min(2, { message: dictionary.auth.signup.errors.lastNameMin })
+      .max(50, { message: dictionary.auth.signup.errors.lastNameMax }),
+    referralCode: z
+      .string()
+      .regex(/^[A-Za-z0-9]{6,12}$/, { message: dictionary.auth.signup.errors.referralCodeInvalid })
+      .optional(),
+  }).refine((data) => data.password === data.repeatPassword, {
+    message: dictionary.auth.signup.errors.passwordsDontMatch,
+    path: ["repeatPassword"],
+  }), [locale]);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -133,7 +130,7 @@ export default function SignupForm({ onClose }: SignupFormProps) {
       if (field === 'repeatPassword') {
         return {
           isValid: formData.password === formData.repeatPassword,
-          message: formData.password !== formData.repeatPassword ? "Passwords don't match" : ''
+          message: formData.password !== formData.repeatPassword ? dictionary.auth.signup.errors.passwordsDontMatch : ''
         };
       }
       fieldSchema.parse(formData[field as keyof typeof formData]);
@@ -179,10 +176,10 @@ export default function SignupForm({ onClose }: SignupFormProps) {
       router.push('/profile');
     } catch (err) {
       const error = err as AuthError;
-      let errorMessage = 'Failed to create account. Please try again.';
+      let errorMessage = dictionary.auth.signup.errors.createAccountFailed;
 
       if (error.status === 422 && error.type === 'validation_error') {
-        errorMessage = 'Invalid input data.';
+        errorMessage = dictionary.auth.signup.errors.invalidInputData;
         const details = error.details || [];
         const newErrors: typeof errors = {};
         details.forEach((detail) => {
@@ -194,10 +191,10 @@ export default function SignupForm({ onClose }: SignupFormProps) {
         });
         setErrors(newErrors);
       } else if (error.status === 409) {
-        errorMessage = 'This email is already registered.';
+        errorMessage = dictionary.auth.signup.errors.emailAlreadyRegistered;
         setErrors({ email: errorMessage });
       } else if (error.status === 400 && error.message.includes('referral')) {
-        errorMessage = 'Invalid referral code provided.';
+        errorMessage = dictionary.auth.signup.errors.invalidReferralCode;
         setErrors({ referralCode: errorMessage });
       } else {
         console.error('Signup error:', error);
@@ -215,76 +212,76 @@ export default function SignupForm({ onClose }: SignupFormProps) {
         <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <Sparkles size={32} className="text-blue-400" />
         </div>
-        <p className="text-zinc-300 text-lg font-medium mb-2">Telegram Authentication</p>
+        <p className="text-zinc-300 text-lg font-medium mb-2">{dictionary.auth.signup.telegramAuth}</p>
         <p className="text-zinc-400">
-          Authentication is handled through Telegram on mobile devices.
+          {dictionary.auth.signup.telegramAuthDesc}
         </p>
       </div>
     );
   }
 
-  const formFields = [
+  const formFields = useMemo(() => [
     {
       id: 'firstName',
-      label: 'First Name',
+      label: dictionary.auth.signup.firstName,
       type: 'text',
-      placeholder: 'Enter your first name',
+      placeholder: dictionary.auth.signup.enterFirstName,
       icon: User,
       required: true,
     },
     {
       id: 'lastName',
-      label: 'Last Name',
+      label: dictionary.auth.signup.lastName,
       type: 'text',
-      placeholder: 'Enter your last name',
+      placeholder: dictionary.auth.signup.enterLastName,
       icon: User,
       required: true,
     },
     {
       id: 'email',
-      label: 'Email',
+      label: dictionary.auth.signup.email,
       type: 'email',
-      placeholder: 'your@email.com',
+      placeholder: dictionary.auth.signup.enterEmail,
       icon: Mail,
       required: true,
     },
     {
       id: 'password',
-      label: 'Password',
+      label: dictionary.auth.signup.password,
       type: 'password',
-      placeholder: 'Enter your password',
+      placeholder: dictionary.auth.signup.enterPassword,
       icon: Lock,
       required: true,
       showToggle: true,
     },
     {
       id: 'repeatPassword',
-      label: 'Repeat Password',
+      label: dictionary.auth.signup.repeatPassword,
       type: 'password',
-      placeholder: 'Repeat your password',
+      placeholder: dictionary.auth.signup.repeatYourPassword,
       icon: Lock,
       required: true,
       showToggle: true,
     },
     {
       id: 'referralCode',
-      label: 'Referral Code',
+      label: dictionary.auth.signup.referralCode,
       type: 'text',
-      placeholder: 'Enter referral code (optional)',
+      placeholder: dictionary.auth.signup.enterReferralCode,
       icon: Gift,
       required: false,
     },
-  ];
+  ], [dictionary.auth.signup]);
 
   return (
-    <div className="p-6 pb-0">
+    <div className="p-6 pb-0 ">
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-pink-500/25">
           <Sparkles size={32} className="text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-white">Create Account</h2>
-        <p className="text-zinc-400">Join our community and start chatting</p>
+        <h2 className="text-2xl font-bold text-white">{dictionary.auth.signup.createAccount}</h2>
+        <p className="text-zinc-400">{dictionary.auth.signup.joinCommunity}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -329,6 +326,7 @@ export default function SignupForm({ onClose }: SignupFormProps) {
                   className={`
                     pl-4 pr-12 py-3 bg-zinc-800/50 backdrop-blur-sm border transition-all duration-200
                     focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50
+                    ${isReferralDisabled && field.id === 'referralCode' && 'pl-10'}
                     ${hasError
                     ? 'border-red-500/50 bg-red-500/5'
                     : isValid
@@ -401,7 +399,7 @@ export default function SignupForm({ onClose }: SignupFormProps) {
                     className="flex items-center space-x-2 text-green-400 text-sm"
                   >
                     <Check size={14} />
-                    <span>Looks good!</span>
+                    <span>{dictionary.auth.signup.looksGood}</span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -438,12 +436,12 @@ export default function SignupForm({ onClose }: SignupFormProps) {
             {isLoading ? (
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Creating Account...</span>
+                <span>{dictionary.auth.signup.creatingAccount}</span>
               </div>
             ) : (
               <div className="flex items-center justify-center space-x-2">
                 <Sparkles size={20} />
-                <span>Create Account</span>
+                <span>{dictionary.auth.signup.createAccount}</span>
               </div>
             )}
           </Button>
@@ -466,15 +464,15 @@ export default function SignupForm({ onClose }: SignupFormProps) {
       {/*      initial={{ opacity: 0, scale: 0.95 }}*/}
       {/*      animate={{ opacity: 1, scale: 1 }}*/}
       {/*      exit={{ opacity: 0, scale: 0.95 }}*/}
-      {/*      className="p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-xl"*/}
+      {/*      className="p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-xl mt-4"*/}
       {/*    >*/}
       {/*      <div className="flex items-center space-x-3">*/}
       {/*        <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">*/}
       {/*          <Gift size={18} className="text-yellow-400" />*/}
       {/*        </div>*/}
       {/*        <div>*/}
-      {/*          <p className="text-yellow-400 font-medium">Referral Bonus!</p>*/}
-      {/*          <p className="text-yellow-300/80 text-sm">You'll receive bonus tokens for using this referral code</p>*/}
+      {/*          <p className="text-yellow-400 font-medium">{dictionary.auth.signup.referralBonus}</p>*/}
+      {/*          <p className="text-yellow-300/80 text-sm">{dictionary.auth.signup.bonusTokensDesc}</p>*/}
       {/*        </div>*/}
       {/*      </div>*/}
       {/*    </motion.div>*/}

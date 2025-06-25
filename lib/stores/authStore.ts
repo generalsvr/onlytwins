@@ -126,7 +126,8 @@ export const useAuthStore = create<AuthState>()(
         setError(null);
 
         try {
-          const user: UserResponse = await authService.getCurrentUser();
+          const user: UserResponse = await authService.getCurrentUser()
+
           setUser(user);
         } catch (error) {
           const authError: AuthError = {

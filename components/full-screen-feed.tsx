@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   MessageCircle,
   Heart,
@@ -15,9 +21,15 @@ import {
   Volume2,
   VolumeX,
   Play,
-  Pause
+  Pause,
 } from 'lucide-react';
-import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import {
+  motion,
+  AnimatePresence,
+  PanInfo,
+  useMotionValue,
+  useTransform,
+} from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import SafeImage from '@/components/safe-image';
 import { AgentResponse } from '@/lib/types/agents';
@@ -51,7 +63,10 @@ export default function AgentCard({ agents }: AgentCardProps) {
   const scale = useTransform(y, [-200, 0, 200], [0.9, 1, 0.9]);
 
   // Memoized current agent to prevent unnecessary re-renders
-  const currentAgent = useMemo(() => agents[currentIndex], [agents, currentIndex]);
+  const currentAgent = useMemo(
+    () => agents[currentIndex],
+    [agents, currentIndex]
+  );
 
   // Get only images for navigation
   const currentImages = useMemo(() => {
@@ -64,8 +79,11 @@ export default function AgentCard({ agents }: AgentCardProps) {
 
     // Add images from public content
     if (currentAgent?.meta.publicContent) {
-      currentAgent.meta.publicContent.forEach(item => {
-        if (item.type === 'image' || (typeof item === 'string' && !item.includes('.mp4'))) {
+      currentAgent.meta.publicContent.forEach((item) => {
+        if (
+          item.type === 'image' ||
+          (typeof item === 'string' && !item.includes('.mp4'))
+        ) {
           images.push(item.url || item);
         }
       });
@@ -84,76 +102,81 @@ export default function AgentCard({ agents }: AgentCardProps) {
   }, [currentAgent?.id, currentVideoUrl]);
 
   // Preload video function
-  const preloadVideo = useCallback(async (videoUrl: string, videoKey: string, signal?: AbortSignal) => {
-    if (videoCache.has(videoKey) || videoLoadingStates.get(videoKey)) {
-      return videoCache.get(videoKey);
-    }
+  const preloadVideo = useCallback(
+    async (videoUrl: string, videoKey: string, signal?: AbortSignal) => {
+      if (videoCache.has(videoKey) || videoLoadingStates.get(videoKey)) {
+        return videoCache.get(videoKey);
+      }
 
-    videoLoadingStates.set(videoKey, true);
-    setIsVideoLoading(true);
+      videoLoadingStates.set(videoKey, true);
+      setIsVideoLoading(true);
 
-    try {
-      const video = document.createElement('video');
-      video.playsInline = true;
-      video.muted = true;
-      video.preload = 'metadata';
-      video.loop = true;
+      try {
+        const video = document.createElement('video');
+        video.playsInline = true;
+        video.muted = true;
+        video.preload = 'metadata';
+        video.loop = true;
 
-      const fullVideoUrl = `${process.env.NEXT_PUBLIC_MEDIA_URL}/${videoUrl}`;
+        const fullVideoUrl = `${videoUrl}`;
 
-      return new Promise<HTMLVideoElement>((resolve, reject) => {
-        const handleLoadedData = () => {
-          if (signal?.aborted) {
+        return new Promise<HTMLVideoElement>((resolve, reject) => {
+          const handleLoadedData = () => {
+            if (signal?.aborted) {
+              reject(new Error('Aborted'));
+              return;
+            }
+
+            videoCache.set(videoKey, video);
+            setVideoLoaded((prev) => new Set(prev).add(videoKey));
+            setVideoError((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(videoKey);
+              return newSet;
+            });
+            videoLoadingStates.delete(videoKey);
+            setIsVideoLoading(false);
+            resolve(video);
+          };
+
+          const handleError = () => {
+            setVideoError((prev) => new Set(prev).add(videoKey));
+            setVideoLoaded((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(videoKey);
+              return newSet;
+            });
+            videoLoadingStates.delete(videoKey);
+            setIsVideoLoading(false);
+            reject(new Error('Video load failed'));
+          };
+
+          const handleAbort = () => {
+            videoLoadingStates.delete(videoKey);
+            setIsVideoLoading(false);
             reject(new Error('Aborted'));
-            return;
+          };
+
+          if (signal) {
+            signal.addEventListener('abort', handleAbort);
           }
 
-          videoCache.set(videoKey, video);
-          setVideoLoaded(prev => new Set(prev).add(videoKey));
-          setVideoError(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(videoKey);
-            return newSet;
+          video.addEventListener('loadeddata', handleLoadedData, {
+            once: true,
           });
-          videoLoadingStates.delete(videoKey);
-          setIsVideoLoading(false);
-          resolve(video);
-        };
+          video.addEventListener('error', handleError, { once: true });
 
-        const handleError = () => {
-          setVideoError(prev => new Set(prev).add(videoKey));
-          setVideoLoaded(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(videoKey);
-            return newSet;
-          });
-          videoLoadingStates.delete(videoKey);
-          setIsVideoLoading(false);
-          reject(new Error('Video load failed'));
-        };
-
-        const handleAbort = () => {
-          videoLoadingStates.delete(videoKey);
-          setIsVideoLoading(false);
-          reject(new Error('Aborted'));
-        };
-
-        if (signal) {
-          signal.addEventListener('abort', handleAbort);
-        }
-
-        video.addEventListener('loadeddata', handleLoadedData, { once: true });
-        video.addEventListener('error', handleError, { once: true });
-
-        video.src = fullVideoUrl;
-        video.load();
-      });
-    } catch (error) {
-      videoLoadingStates.delete(videoKey);
-      setIsVideoLoading(false);
-      throw error;
-    }
-  }, []);
+          video.src = fullVideoUrl;
+          video.load();
+        });
+      } catch (error) {
+        videoLoadingStates.delete(videoKey);
+        setIsVideoLoading(false);
+        throw error;
+      }
+    },
+    []
+  );
 
   // Setup current video
   const setupCurrentVideo = useCallback(async () => {
@@ -175,7 +198,11 @@ export default function AgentCard({ agents }: AgentCardProps) {
       let video = videoCache.get(currentVideoKey);
 
       if (!video) {
-        video = await preloadVideo(currentVideoUrl, currentVideoKey, loadingControllerRef.current.signal);
+        video = await preloadVideo(
+          currentVideoUrl,
+          currentVideoKey,
+          loadingControllerRef.current.signal
+        );
       }
 
       if (loadingControllerRef.current.signal.aborted) {
@@ -191,15 +218,19 @@ export default function AgentCard({ agents }: AgentCardProps) {
 
         // Auto-play after setup
         setTimeout(() => {
-          if (currentVideoRef.current && !loadingControllerRef.current?.signal.aborted) {
-            currentVideoRef.current.play()
+          if (
+            currentVideoRef.current &&
+            !loadingControllerRef.current?.signal.aborted
+          ) {
+            currentVideoRef.current
+              .play()
               .then(() => {
                 setIsPlaying(true);
                 setShowVideo(true);
               })
-              .catch(error => {
+              .catch((error) => {
                 console.error('Error playing video:', error);
-                setVideoError(prev => new Set(prev).add(currentVideoKey));
+                setVideoError((prev) => new Set(prev).add(currentVideoKey));
               });
           }
         }, 300);
@@ -207,7 +238,7 @@ export default function AgentCard({ agents }: AgentCardProps) {
     } catch (error) {
       if (error.message !== 'Aborted') {
         console.error('Error setting up video:', error);
-        setVideoError(prev => new Set(prev).add(currentVideoKey));
+        setVideoError((prev) => new Set(prev).add(currentVideoKey));
       }
     }
   }, [currentVideoKey, currentVideoUrl, isMuted, preloadVideo]);
@@ -261,7 +292,11 @@ export default function AgentCard({ agents }: AgentCardProps) {
 
   // Video control functions
   const playVideo = useCallback(async () => {
-    if (currentVideoRef.current && currentVideoKey && videoLoaded.has(currentVideoKey)) {
+    if (
+      currentVideoRef.current &&
+      currentVideoKey &&
+      videoLoaded.has(currentVideoKey)
+    ) {
       try {
         currentVideoRef.current.muted = isMuted;
         await currentVideoRef.current.play();
@@ -269,7 +304,7 @@ export default function AgentCard({ agents }: AgentCardProps) {
         setShowVideo(true);
       } catch (error) {
         console.error('Error playing video:', error);
-        setVideoError(prev => new Set(prev).add(currentVideoKey));
+        setVideoError((prev) => new Set(prev).add(currentVideoKey));
       }
     }
   }, [currentVideoKey, videoLoaded, isMuted]);
@@ -298,52 +333,61 @@ export default function AgentCard({ agents }: AgentCardProps) {
   }, [isMuted]);
 
   // Handle swipe functions
-  const handleVerticalSwipe = useCallback((info: PanInfo) => {
-    const threshold = 100;
-    const velocity = info.velocity.y;
-    const offset = info.offset.y;
+  const handleVerticalSwipe = useCallback(
+    (info: PanInfo) => {
+      const threshold = 100;
+      const velocity = info.velocity.y;
+      const offset = info.offset.y;
 
-    if (Math.abs(velocity) > 500 || Math.abs(offset) > threshold) {
-      if (offset > 0 && currentIndex > 0) {
-        // Swipe down - previous agent
-        setCurrentIndex(prev => prev - 1);
-        setCurrentImageIndex(0);
-      } else if (offset < 0 && currentIndex < agents.length - 1) {
-        // Swipe up - next agent
-        setCurrentIndex(prev => prev + 1);
-        setCurrentImageIndex(0);
+      if (Math.abs(velocity) > 500 || Math.abs(offset) > threshold) {
+        if (offset > 0 && currentIndex > 0) {
+          // Swipe down - previous agent
+          setCurrentIndex((prev) => prev - 1);
+          setCurrentImageIndex(0);
+        } else if (offset < 0 && currentIndex < agents.length - 1) {
+          // Swipe up - next agent
+          setCurrentIndex((prev) => prev + 1);
+          setCurrentImageIndex(0);
+        }
       }
-    }
-    y.set(0);
-  }, [currentIndex, agents.length, y]);
+      y.set(0);
+    },
+    [currentIndex, agents.length, y]
+  );
 
-  const handleHorizontalSwipe = useCallback((info: PanInfo) => {
-    const threshold = 50;
-    const offset = info.offset.x;
+  const handleHorizontalSwipe = useCallback(
+    (info: PanInfo) => {
+      const threshold = 50;
+      const offset = info.offset.x;
 
-    if (Math.abs(offset) > threshold && currentImages.length > 1) {
-      if (offset > 0 && currentImageIndex > 0) {
-        // Swipe right - previous image
-        setCurrentImageIndex(prev => prev - 1);
-      } else if (offset < 0 && currentImageIndex < currentImages.length - 1) {
-        // Swipe left - next image
-        setCurrentImageIndex(prev => prev + 1);
+      if (Math.abs(offset) > threshold && currentImages.length > 1) {
+        if (offset > 0 && currentImageIndex > 0) {
+          // Swipe right - previous image
+          setCurrentImageIndex((prev) => prev - 1);
+        } else if (offset < 0 && currentImageIndex < currentImages.length - 1) {
+          // Swipe left - next image
+          setCurrentImageIndex((prev) => prev + 1);
+        }
       }
-    }
-  }, [currentImageIndex, currentImages.length]);
+    },
+    [currentImageIndex, currentImages.length]
+  );
 
-  const handlePanEnd = useCallback((event: any, info: PanInfo) => {
-    const isVertical = Math.abs(info.offset.y) > Math.abs(info.offset.x);
+  const handlePanEnd = useCallback(
+    (event: any, info: PanInfo) => {
+      const isVertical = Math.abs(info.offset.y) > Math.abs(info.offset.x);
 
-    if (isVertical) {
-      handleVerticalSwipe(info);
-    } else {
-      handleHorizontalSwipe(info);
-    }
-  }, [handleVerticalSwipe, handleHorizontalSwipe]);
+      if (isVertical) {
+        handleVerticalSwipe(info);
+      } else {
+        handleHorizontalSwipe(info);
+      }
+    },
+    [handleVerticalSwipe, handleHorizontalSwipe]
+  );
 
   const handleLike = useCallback((agentId: number) => {
-    setLiked(prev => {
+    setLiked((prev) => {
       const newLiked = new Set(prev);
       if (newLiked.has(agentId)) {
         newLiked.delete(agentId);
@@ -361,7 +405,7 @@ export default function AgentCard({ agents }: AgentCardProps) {
   // Video event handlers
   const handleVideoError = useCallback(() => {
     if (currentVideoKey) {
-      setVideoError(prev => new Set(prev).add(currentVideoKey));
+      setVideoError((prev) => new Set(prev).add(currentVideoKey));
       setIsPlaying(false);
       setShowVideo(false);
     }
@@ -379,11 +423,15 @@ export default function AgentCard({ agents }: AgentCardProps) {
   if (!currentAgent) return null;
 
   const hasVideo = !!currentVideoUrl;
-  const isCurrentVideoLoaded = currentVideoKey ? videoLoaded.has(currentVideoKey) : false;
-  const hasCurrentVideoError = currentVideoKey ? videoError.has(currentVideoKey) : false;
+  const isCurrentVideoLoaded = currentVideoKey
+    ? videoLoaded.has(currentVideoKey)
+    : false;
+  const hasCurrentVideoError = currentVideoKey
+    ? videoError.has(currentVideoKey)
+    : false;
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden h-[calc(100vh-64px)]">
+    <div className="fixed inset-0 bg-black overflow-hidden h-[calc(100svh-64px)]">
       <motion.div
         className="relative w-full h-full"
         style={{ y, opacity, scale }}
@@ -396,7 +444,7 @@ export default function AgentCard({ agents }: AgentCardProps) {
         <div className="absolute inset-0">
           {/* Always show image first */}
           <img
-            src={`${process.env.NEXT_PUBLIC_MEDIA_URL}/${currentImages[currentImageIndex]}`}
+            src={`${currentImages[currentImageIndex]}`}
             alt={currentAgent.name}
             className="object-cover w-full h-full"
           />
@@ -592,6 +640,7 @@ export default function AgentCard({ agents }: AgentCardProps) {
             </div>
 
             {/* Key traits */}
+
             {currentAgent.meta.keyTraits && (
               <div className="flex flex-wrap gap-2">
                 {currentAgent.meta.keyTraits
@@ -600,9 +649,10 @@ export default function AgentCard({ agents }: AgentCardProps) {
                   .map((trait, index) => (
                     <div
                       key={index}
-                      className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/30"
+                      className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/30 max-w-[120px]"
+                      title={trait.trim()} // Shows full text on hover
                     >
-                      <span className="text-white text-xs font-medium">
+                      <span className="text-white text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis block">
                         {trait.trim()}
                       </span>
                     </div>
@@ -617,7 +667,10 @@ export default function AgentCard({ agents }: AgentCardProps) {
               </p>
             )}
           </div>
-          <button onClick={() => router.push(`/character/${currentAgent.id}`)} className="px-6 py-2 text-sm font-semibold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-pink-500/25">
+          <button
+            onClick={() => router.push(`/character/${currentAgent.id}`)}
+            className="px-6 py-2 text-sm font-semibold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-pink-500/25"
+          >
             View profile
           </button>
         </div>
@@ -674,4 +727,3 @@ export default function AgentCard({ agents }: AgentCardProps) {
     </div>
   );
 }
-

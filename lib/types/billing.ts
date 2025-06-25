@@ -15,16 +15,16 @@ export interface CreatePaymentLinkRequest {
 }
 
 export interface CreateSubscriptionRequest {
-  customer_id: string;
-  product_name: string;
-  unit_amount: number;
+  customerId: string;
+  productName: string;
+  unitAmount: number;
   currency: string;
   interval: 'month' | 'year';
-  cancel_at?: string;
-  customer_name?: string;
-  customer_phone?: string;
-  success_url: string;
-  cancel_url: string;
+  cancelAt?: string;
+  customerName?: string;
+  customerPhone?: string;
+  successUrl: string;
+  cancelUrl: string;
   metadata?: Record<string, string>;
 }
 

@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers';
+import { camelizeKeys } from 'humps';
 
 export class AuthServerService {
-  private baseUrl = process.env.API_BASE_URL || 'http://localhost:3000/api';
+  private baseUrl = `${process.env.NEXT_PUBLIC_HOST_URL}/api`;
 
   private async getHeaders() {
     const cookieStore = await cookies();
@@ -23,7 +24,11 @@ export class AuthServerService {
       throw new Error('Failed to fetch user');
     }
 
-    return response.json();
+    const data = await response.json()
+
+
+
+    return camelizeKeys(data)
   }
 }
 
