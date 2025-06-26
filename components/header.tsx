@@ -36,12 +36,12 @@ const languages: Language[] = [
 ];
 
 export default function Header({
-  title,
-  showBack = false,
-  showSearch = false,
-  onLogin,
-  onSignup,
-}: HeaderProps) {
+                                 title,
+                                 showBack = false,
+                                 showSearch = false,
+                                 onLogin,
+                                 onSignup,
+                               }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -89,8 +89,6 @@ export default function Header({
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Handle search logic here
-      console.log('Searching for:', searchQuery);
       deactivateSearch();
     }
   };
@@ -215,10 +213,10 @@ export default function Header({
                           className={`
                             w-full flex items-center justify-between px-4 py-3 text-left transition-all duration-200
                             ${
-                              locale === language.code
-                                ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-white'
-                                : 'text-zinc-300 hover:bg-zinc-800/50 hover:text-white'
-                            }
+                            locale === language.code
+                              ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-white'
+                              : 'text-zinc-300 hover:bg-zinc-800/50 hover:text-white'
+                          }
                           `}
                           whileHover={{ x: 4 }}
                           whileTap={{ scale: 0.98 }}

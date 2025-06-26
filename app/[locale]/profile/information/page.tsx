@@ -67,8 +67,6 @@ export default function ProfileInformationPage() {
         firstName: formData.firstName,
         lastName: formData.lastName,
       }).then(() => {
-        // Here you would update the user profile
-        console.log('Saving profile:', formData);
         getCurrentUser()
         setIsEditing(false);
         setHasChanges(false);
@@ -108,7 +106,7 @@ export default function ProfileInformationPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-10 backdrop-blur-xl bg-zinc-900/80 border-b border-zinc-800/50">
+      <div className="sticky top-0 z-10">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center">
             <button

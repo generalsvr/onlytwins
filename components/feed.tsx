@@ -688,14 +688,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                   {t.actions.viewProfile}
                 </motion.button>
 
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/20 transition-all duration-200"
-                  aria-label={t.actions.share}
-                >
-                  <Share size={18} />
-                </motion.button>
+
               </div>
             </div>
           </div>

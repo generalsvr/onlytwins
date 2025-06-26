@@ -1,7 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 :root {
   --foreground-rgb: 255, 255, 255;
   --background-rgb: 0, 0, 0;
@@ -48,15 +47,14 @@ body {
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
   transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+          background-color 0.3s ease,
+          color 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: #4b5563 #f1f1f1;
 }
-
 /* Responsive typography */
 @layer base {
   h1 {

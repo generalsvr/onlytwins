@@ -17,7 +17,7 @@ interface PaymentResponse {
 export const usePayment = (locale: string): PaymentResponse => {
 
   const purchaseContent = async (data: PutTransactionRequest) => {
-      return await paymentsService.putTransaction(data)
+      return await paymentsService.putTransaction(data).catch((err) => err)
   }
   const purchaseSubscription = async (data: CreateSubscriptionRequest) => {
     return await billingService.createSubscription(data)

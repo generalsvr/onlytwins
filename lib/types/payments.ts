@@ -1,3 +1,5 @@
+import { Response } from '@/lib/types/common';
+
 export interface PutTransactionRequest {
   action: 'content_unlock' | 'tip';
   targetType: string;
@@ -7,19 +9,11 @@ export interface PutTransactionRequest {
   message?: string;
   metadata?: any;
 }
-export interface PutTransactionResponse {
-  transactionId: number;
-  hash: string;
+export interface PutTransactionResponse extends Response{
+  transaction_id: number;
   action: string;
-  targetType: string;
-  targetId: number;
   amount: number;
   currency: string;
-  senderId: number;
-  receiverId: number;
-  status: string;
-  message: string;
-  metadata: any;
-  createdAt: string;
-  contentAccess: any;
+  status: 'SUCCESS' | 'ERROR';
+  url: string;
 }

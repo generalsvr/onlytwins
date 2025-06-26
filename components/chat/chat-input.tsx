@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, MicOff, Loader2 } from 'lucide-react';
+import { Send, Mic, MicOff, Loader2, Coins } from 'lucide-react';
 
 interface ChatInputProps {
   messageText: string;
@@ -14,6 +14,7 @@ interface ChatInputProps {
   isLoading?: boolean;
   placeholder?: string;
   isMobile: boolean;
+  balance: number;
 }
 
 export default function ChatInput({
@@ -27,7 +28,8 @@ export default function ChatInput({
   isAuthenticated,
   isLoading = false,
   placeholder = 'Type a message...',
-  isMobile
+  isMobile,
+  balance,
 }: ChatInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [showAuthTooltip, setShowAuthTooltip] = useState(false);
@@ -72,7 +74,9 @@ export default function ChatInput({
   };
 
   return (
-    <div className={`absolute-center-x bottom-0 z-50 w-[75%] ${isMobile && 'w-[95%]'}`}>
+    <div
+      className={`absolute-center-x bottom-0 z-50 w-[75%] ${isMobile && 'w-[95%]'}`}
+    >
       {/* Backdrop blur overlay */}
       <div className="absolute inset-0 w-full" />
 
@@ -278,22 +282,27 @@ export default function ChatInput({
               animate={{ opacity: 1 }}
               className="flex gap-2 mt-3 overflow-x-auto pb-1"
             >
-              {['Hello!', 'How can I help?', 'Tell me more'].map(
-                (suggestion, index) => (
-                  <motion.button
-                    key={suggestion}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 text-zinc-300 text-sm rounded-full whitespace-nowrap transition-colors backdrop-blur-sm border border-zinc-700/30"
-                    onClick={() => setMessageText(suggestion)}
-                  >
-                    {suggestion}
-                  </motion.button>
-                )
-              )}
+              <div className="flex items-center bg-white/10 backdrop-blur-sm px-3 py-1 rounded-2xl">
+                <Coins size={14} className="text-yellow-400 mr-1" />
+                <span className="text-sm text-white font-medium">
+                  {balance || '0'}
+                </span>
+              </div>
+              {/*{['Hello!', 'How can I help?', 'Tell me more'].map(*/}
+              {/*  (suggestion, index) => (*/}
+              {/*    <motion.button*/}
+              {/*      key={suggestion}*/}
+              {/*      initial={{ opacity: 0, x: 20 }}*/}
+              {/*      animate={{ opacity: 1, x: 0 }}*/}
+              {/*      transition={{ delay: index * 0.1 }}*/}
+              {/*      whileHover={{ scale: 1.02 }}*/}
+              {/*      whileTap={{ scale: 0.98 }}*/}
+              {/*      className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 text-zinc-300 text-sm rounded-full whitespace-nowrap transition-colors backdrop-blur-sm border border-zinc-700/30"*/}
+              {/*      onClick={() => setMessageText(suggestion)}*/}
+              {/*    >*/}
+              {/*      {suggestion}*/}
+              {/*    </motion.button>*/}
+              {/*  )*/}
             </motion.div>
           )}
         </div>

@@ -24,6 +24,9 @@ import AuthModal from '@/components/auth/auth-modal';
 import TokensModal from '@/components/modals/tokens';
 import { usePayment } from '@/lib/hooks/usePayment';
 import { useLocale } from '@/contexts/LanguageContext';
+import { useAgent } from '@/lib/hooks/useAgent';
+import { Character } from '@/lib/types/characters';
+import { useLoadingStore } from '@/lib/stores/useLoadingStore';
 
 interface CharacterMedia {
   type: 'image' | 'video';
@@ -106,9 +109,13 @@ const ImageLightbox = ({
 };
 
 // Character Info Card Component
-const CharacterInfoCard = ({ character }: { character: AgentResponse }) => {
-  const meta = character.meta;
-  console.log(meta)
+const CharacterInfoCard = ({
+  currentCharacter,
+}: {
+  currentCharacter: AgentResponse;
+}) => {
+  const meta = currentCharacter.meta;
+
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 space-y-4">
       <h2 className="text-xl font-semibold text-white mb-4">
@@ -226,12 +233,21 @@ export default function CharacterProfileTemplate({
   const { isAuthenticated, getCurrentUser, user } = useAuthStore(
     (state) => state
   );
+  const setLoading = useLoadingStore((state) => state.setLoading);
   const { locale } = useLocale();
   const { openModal, closeModal } = useModalStore((state) => state);
   const { purchaseContent } = usePayment(locale);
+  const [currentCharacter, setCurrentCharacter] =
+    useState<AgentResponse | null>(character);
+  const { refetch: refetchAgent, isRefetching } = useAgent(
+    currentCharacter?.id || 0,
+    (updatedCharacter) => {
+      setCurrentCharacter(updatedCharacter);
+    }
+  );
 
   const handleOpenChat = () => {
-    router.push(`/${locale}/chat/${character.id}`);
+    router.push(`/${locale}/chat/${currentCharacter.id}`);
   };
 
   const handleImageClick = (src: string, alt: string) => {
@@ -244,20 +260,43 @@ export default function CharacterProfileTemplate({
 
   const handleBuyContent = async (content: PrivateContent) => {
     if (!content || !content.price) return;
-    if (!isAuthenticated || !character?.id)
+    if (!isAuthenticated || !currentCharacter?.id)
       return openModal({
         type: 'message',
         content: (
           <AuthModal initialMode="signup" onClose={() => closeModal()} />
         ),
       });
+    setLoading(true);
     await purchaseContent({
       action: 'content_unlock',
       targetType: 'content',
       targetId: content?.id,
       currency: 'OTT',
-    }).then(() => {
-      getCurrentUser();
+    }).then(async (res) => {
+      const newUrl = res.url;
+      if (currentCharacter.meta.privateContent && res.status === 'SUCCESS') {
+        const updatedPrivateContent: PrivateContent[] =
+          currentCharacter.meta.privateContent.map((item) => {
+            if (item.id === content.id) {
+              return {
+                ...item,
+                purchased:true,
+                url: newUrl
+              };
+            }
+            return item
+          });
+        setCurrentCharacter({
+          ...currentCharacter,
+          meta: {
+            ...currentCharacter.meta,
+            privateContent: updatedPrivateContent,
+          },
+        });
+      }
+      await getCurrentUser();
+      setLoading(false);
     });
   };
 
@@ -278,7 +317,7 @@ export default function CharacterProfileTemplate({
   }, [activeTab]);
 
   return (
-    character && (
+    currentCharacter && (
       <>
         <ImageLightbox
           src={lightboxImage?.src || ''}
@@ -294,8 +333,8 @@ export default function CharacterProfileTemplate({
           {isMobile && (
             <div className="relative h-48">
               <SafeImage
-                src={`${character.meta.profileImage}`}
-                alt={`${character.name}'s cover`}
+                src={`${currentCharacter.meta.profileImage}`}
+                alt={`${currentCharacter.name}'s cover`}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
@@ -332,13 +371,13 @@ export default function CharacterProfileTemplate({
               </button>
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                 <SafeImage
-                  src={`${character.meta.profileImage}`}
-                  alt={`${character.name}'s cover`}
+                  src={`${currentCharacter.meta.profileImage}`}
+                  alt={`${currentCharacter.name}'s cover`}
                   className="w-full aspect-[4/5] object-cover cursor-pointer"
                   onClick={() =>
                     handleImageClick(
-                      character.meta.profileImage,
-                      `${character.name}'s profile`
+                      currentCharacter.meta.profileImage,
+                      `${currentCharacter.name}'s profile`
                     )
                   }
                 />
@@ -367,19 +406,19 @@ export default function CharacterProfileTemplate({
                   <div className="relative">
                     <div className="absolute -inset-1 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full blur opacity-60"></div>
                     <SafeImage
-                      src={`${character.meta.profileImage}`}
-                      alt={character.name}
+                      src={`${currentCharacter.meta.profileImage}`}
+                      alt={currentCharacter.name}
                       className="relative w-24 h-24 rounded-full border-3 border-white/30 object-cover shadow-xl cursor-pointer"
                       width={96}
                       height={96}
                       onClick={() =>
                         handleImageClick(
-                          character.meta.profileImage,
-                          `${character.name}'s profile`
+                          currentCharacter.meta.profileImage,
+                          `${currentCharacter.name}'s profile`
                         )
                       }
                     />
-                    {character.verified && (
+                    {currentCharacter.verified && (
                       <div className="absolute bottom-0 right-0 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full p-1.5 border-2 border-white/20">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -400,8 +439,8 @@ export default function CharacterProfileTemplate({
                   <div className="flex items-center gap-4">
                     <div>
                       <h1 className="text-3xl font-bold flex items-center text-white">
-                        {character.name}
-                        {character.verified && (
+                        {currentCharacter.name}
+                        {currentCharacter.verified && (
                           <span className="ml-2 text-pink-400">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -437,8 +476,8 @@ export default function CharacterProfileTemplate({
                 <div className="mt-4 space-y-6">
                   <div>
                     <h1 className="text-2xl font-bold flex items-center text-white">
-                      {character.name}
-                      {character.verified && (
+                      {currentCharacter.name}
+                      {currentCharacter.verified && (
                         <span className="ml-2 text-pink-400">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -455,19 +494,21 @@ export default function CharacterProfileTemplate({
                         </span>
                       )}
                     </h1>
-                    <p className="text-zinc-400 mt-1">{character.name}</p>
+                    <p className="text-zinc-400 mt-1">
+                      {currentCharacter.name}
+                    </p>
                     <p className="mt-3 text-zinc-200 leading-relaxed">
-                      {character.description}
+                      {currentCharacter.description}
                     </p>
                   </div>
 
-                  <CharacterInfoCard character={character} />
+                  <CharacterInfoCard currentCharacter={currentCharacter} />
                 </div>
               ) : (
                 <div className="space-y-8">
                   <div>
                     <p className="text-lg mb-6 text-zinc-200 leading-relaxed">
-                      {character.bio}
+                      {currentCharacter.bio}
                     </p>
 
                     <div className="mb-8 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
@@ -475,12 +516,12 @@ export default function CharacterProfileTemplate({
                         About me
                       </h2>
                       <p className="text-zinc-300 leading-relaxed">
-                        {character.description}
+                        {currentCharacter.description}
                       </p>
                     </div>
                   </div>
 
-                  <CharacterInfoCard character={character} />
+                  <CharacterInfoCard currentCharacter={currentCharacter} />
                 </div>
               )}
             </div>
@@ -519,8 +560,8 @@ export default function CharacterProfileTemplate({
                 <div
                   className={`grid ${isMobile ? 'grid-cols-3 gap-2' : 'grid-cols-3 gap-4'}`}
                 >
-                  {character?.meta.publicContent &&
-                    character?.meta.publicContent
+                  {currentCharacter?.meta.publicContent &&
+                    currentCharacter?.meta.publicContent
                       .filter((item) => item.mimeType.includes('image'))
                       .map((media, index) => (
                         <div
@@ -529,13 +570,13 @@ export default function CharacterProfileTemplate({
                           onClick={() =>
                             handleImageClick(
                               media.url,
-                              `${character.name}'s gallery ${index + 1}`
+                              `${currentCharacter.name}'s gallery ${index + 1}`
                             )
                           }
                         >
                           <SafeImage
                             src={media.url}
-                            alt={`${character.name}'s gallery ${index + 1}`}
+                            alt={`${currentCharacter.name}'s gallery ${index + 1}`}
                             className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
                             width={isMobile ? 120 : 300}
                             height={isMobile ? 120 : 300}
@@ -550,34 +591,60 @@ export default function CharacterProfileTemplate({
                 <div
                   className={`grid ${isMobile ? 'grid-cols-2 gap-4' : 'grid-cols-3 gap-6'}`}
                 >
-                  {character.meta.privateContent ? (
-                    character.meta.privateContent.map((content) => (
-                      <div
-                        key={content.id}
-                        className="relative rounded-xl overflow-hidden group cursor-pointer"
-                      >
-                        <div className="aspect-square">
-                          <SafeImage
-                            src={content.url}
-                            alt={`Premium content ${content.id}`}
-                            className="w-full h-full object-cover"
-                            width={isMobile ? 150 : 300}
-                            height={isMobile ? 150 : 300}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col items-center justify-end p-4">
-                            <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-3 shadow-lg">
-                              {content.price} GPT
+                  {currentCharacter.meta.privateContent ? (
+                    currentCharacter.meta.privateContent.map((content) => {
+                      if (content.purchased) {
+                        return (
+                          <div
+                            key={content.id}
+                            className="relative rounded-xl overflow-hidden group cursor-pointer"
+                          >
+                            <div className="aspect-square">
+                              <img
+                                src={content.url}
+                                alt={`Premium content ${content.id}`}
+                                className="w-full h-full object-cover"
+                                width={isMobile ? 150 : 300}
+                                height={isMobile ? 150 : 300}
+                                onClick={() =>
+                                  handleImageClick(
+                                    content.url,
+                                    `${currentCharacter.name}'s profile`
+                                  )
+                                }
+                              />
                             </div>
-                            <button
-                              className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
-                              onClick={() => handleBuyContent(content)}
-                            >
-                              Unlock
-                            </button>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div
+                          key={content.id}
+                          className="relative rounded-xl overflow-hidden group cursor-pointer"
+                        >
+                          <div className="aspect-square">
+                            <SafeImage
+                              src={content.url}
+                              alt={`Premium content ${content.id}`}
+                              className="w-full h-full object-cover"
+                              width={isMobile ? 150 : 300}
+                              height={isMobile ? 150 : 300}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col items-center justify-end p-4">
+                              <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-3 shadow-lg">
+                                {content.price} GPT
+                              </div>
+                              <button
+                                className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
+                                onClick={() => handleBuyContent(content)}
+                              >
+                                Unlock
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="col-span-full text-center py-12">
                       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
@@ -594,8 +661,8 @@ export default function CharacterProfileTemplate({
                 <div
                   className={`grid ${isMobile ? 'grid-cols-2 gap-4' : 'grid-cols-3 gap-6'}`}
                 >
-                  {character?.meta.publicContent &&
-                    character.meta.publicContent
+                  {currentCharacter?.meta.publicContent &&
+                    currentCharacter.meta.publicContent
                       .filter((item) => item.mimeType.includes('video'))
                       .map((media, index) => (
                         <div
@@ -612,8 +679,8 @@ export default function CharacterProfileTemplate({
                           </div>
                         </div>
                       ))}
-                  {character?.meta.publicContent &&
-                    character.meta.publicContent.filter((item) =>
+                  {currentCharacter?.meta.publicContent &&
+                    currentCharacter.meta.publicContent.filter((item) =>
                       item.mimeType.includes('video')
                     ).length === 0 && (
                       <div className="col-span-full text-center py-12">

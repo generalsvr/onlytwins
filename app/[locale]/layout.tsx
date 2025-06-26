@@ -33,19 +33,17 @@ export default async function RootLayout({
   const dict = await getDictionary(locale as 'en' | 'ru' | 'zh');
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-black text-white hide-scrollbar`}>
+      <body className={`${inter.className} hide-scrollbar`}>
         <A11ySkipLink />
         <ErrorBoundary>
-          <ThemeProvider>
-            <LanguageProvider dictionary={dict} locale={locale}>
-              <Suspense fallback={<div>Loading...</div>}>
-                <ClientLayout initialAuthState={initialAuthState}>
-                  {children}
-                </ClientLayout>
-                <Modal />
-              </Suspense>
-            </LanguageProvider>
-          </ThemeProvider>
+          <LanguageProvider dictionary={dict} locale={locale}>
+            <Suspense fallback={<div>Loading...</div>}>
+              <ClientLayout initialAuthState={initialAuthState}>
+                {children}
+              </ClientLayout>
+              <Modal />
+            </Suspense>
+          </LanguageProvider>
         </ErrorBoundary>
       </body>
     </html>

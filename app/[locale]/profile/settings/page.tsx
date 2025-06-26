@@ -3,28 +3,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
-  Moon,
-  Sun,
   Globe,
-  Bell,
-  Shield,
-  HelpCircle,
   Info,
   ChevronRight,
-  Volume2,
-  VolumeX,
-  Eye,
-  EyeOff,
-  Smartphone,
-  Monitor,
   Palette,
-  Lock,
   FileText,
-  MessageCircle,
-  Star,
-  Download,
-  Trash2,
-  Settings as SettingsIcon,
+  Download
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePathname, useRouter, useParams } from 'next/navigation';
@@ -210,15 +194,15 @@ export default function SettingsPage() {
         title: dictionary.settings.appearance,
         icon: Palette,
         items: [
-          {
-            id: 'theme',
-            icon: settings.darkMode ? Moon : Sun,
-            title: dictionary.settings.darkMode,
-            description: dictionary.settings.darkModeDesc,
-            type: 'toggle',
-            value: settings.darkMode,
-            onChange: handleThemeChange,
-          },
+          // {
+          //   id: 'theme',
+          //   icon: settings.darkMode ? Moon : Sun,
+          //   title: dictionary.settings.darkMode,
+          //   description: dictionary.settings.darkModeDesc,
+          //   type: 'toggle',
+          //   value: settings.darkMode,
+          //   onChange: handleThemeChange,
+          // },
           {
             id: 'language',
             icon: Globe,
@@ -332,7 +316,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-10 backdrop-blur-xl bg-zinc-900/80 border-b border-zinc-800/50">
+      <div className="sticky top-0 z-10">
         <div className="flex items-center p-4">
           <button
             onClick={handleBack}

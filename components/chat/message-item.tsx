@@ -10,7 +10,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { Message } from '@/lib/types/chat';
-import { AgentResponse } from '@/lib/types/agents';
+import { AgentResponse, PrivateContent } from '@/lib/types/agents';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDate } from '@/lib/utils';
 
@@ -21,6 +21,7 @@ interface MessageItemProps {
   playingStates: { [key: number]: boolean };
   isMobile: boolean;
   onPurchaseMedia?: (messageId: number, price: number) => void;
+  handlePurchaseContent: (content: PrivateContent, messageId: number) => void
 }
 
 export default function MessageItem({
@@ -30,6 +31,7 @@ export default function MessageItem({
   playingStates,
   isMobile,
   onPurchaseMedia,
+  handlePurchaseContent
 }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -49,19 +51,6 @@ export default function MessageItem({
     }
   };
 
-  const handlePurchaseMedia = async () => {
-    if (!isPaidMedia || !onPurchaseMedia) return;
-
-    setIsPurchasing(true);
-    try {
-      await onPurchaseMedia(message.id, message.media!.price!);
-    } catch (error) {
-      console.error('Purchase failed:', error);
-    } finally {
-      setIsPurchasing(false);
-    }
-  };
-
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} group`}>
       <div
@@ -75,10 +64,7 @@ export default function MessageItem({
             transition={{ duration: 0.2 }}
           >
             <img
-              src={
-                `${character.meta.profileImage}` ||
-                ''
-              }
+              src={`${character.meta.profileImage}` || ''}
               alt={character.name}
               className="object-cover"
             />
@@ -193,11 +179,11 @@ export default function MessageItem({
                           </div>
 
                           <motion.button
-                            onClick={handlePurchaseMedia}
                             disabled={isPurchasing}
                             className="flex items-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-full text-white font-medium transition-all duration-200"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
+                            onClick={() => handlePurchaseContent(message.media!, message.id)}
                           >
                             {isPurchasing ? (
                               <>

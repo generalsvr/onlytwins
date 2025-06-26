@@ -103,20 +103,20 @@ export default function ProfilePage() {
           },
         ],
       },
-      // {
-      //   title: dictionary.profile.socialRewards,
-      //   items: [
-      //     {
-      //       id: 'affiliate',
-      //       route: '/profile/affiliate',
-      //       icon: Users,
-      //       title: dictionary.profile.affiliateProgram,
-      //       description: dictionary.profile.inviteFriendsEarn,
-      //       color: 'text-blue-500',
-      //       bgColor: 'bg-blue-500/10',
-      //     },
-      //   ],
-      // },
+      {
+        title: dictionary.profile.socialRewards,
+        items: [
+          {
+            id: 'affiliate',
+            route: '/profile/affiliate',
+            icon: Users,
+            title: dictionary.profile.affiliateProgram,
+            description: dictionary.profile.inviteFriendsEarn,
+            color: 'text-blue-500',
+            bgColor: 'bg-blue-500/10',
+          },
+        ],
+      },
       {
         title: dictionary.profile.system,
         items: [
@@ -190,7 +190,7 @@ export default function ProfilePage() {
               <div className="ml-6 flex-1">
                 <div className="flex items-center space-x-3 mb-2">
                   <h1 className="text-2xl font-bold text-white">
-                    {user?.firstName || 'First'} {user?.lastName || 'Last'}
+                    {user?.firstName || 'Firstname'} {user?.lastName || 'Lastname'}
                   </h1>
                   {user?.isPremium && (
                     <div className="flex items-center bg-yellow-500/20 backdrop-blur-sm px-2 py-1 rounded-lg border border-yellow-400/30">
@@ -207,16 +207,11 @@ export default function ProfilePage() {
 
                 {/* Quick Stats */}
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center bg-white/10 backdrop-blur-sm px-3 py-1 rounded-lg">
-                    <Star size={14} className="text-yellow-400 mr-1" />
-                    <span className="text-sm text-white font-medium">
-                      4.9 {dictionary.profile.rating}
-                    </span>
-                  </div>
+
                   <div className="flex items-center bg-white/10 backdrop-blur-sm px-3 py-1 rounded-lg">
                     <Coins size={14} className="text-yellow-400 mr-1" />
                     <span className="text-sm text-white font-medium">
-                      {user?.tokens?.toLocaleString() || '0'}
+                      {user?.balances.oTT?.toLocaleString() || '0'}
                     </span>
                   </div>
                 </div>

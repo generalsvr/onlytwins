@@ -8,6 +8,7 @@ export interface RegisterRequest {
   password: string;
   firstName: string;
   lastName: string;
+  refCode?: string;
 }
 
 export interface TokenResponse {

@@ -12,13 +12,17 @@ import MessageList from '@/components/chat/messages-list';
 import ChatInput from '@/components/chat/chat-input';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import { useConversationHistory } from '@/lib/hooks/useConversationHistory';
-import { AgentResponse } from '@/lib/types/agents';
+import { AgentResponse, PrivateContent } from '@/lib/types/agents';
 import { chatService } from '@/lib/services/v1/chat';
 import { ChatMessage, ChatRequest, Message } from '@/lib/types/chat';
 
 import { v4 } from 'uuid';
 import { formatDate, getCurrentTime } from '@/lib/utils';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useLocale } from '@/contexts/LanguageContext';
+import { usePayment } from '@/lib/hooks/usePayment';
+import { useLoadingStore } from '@/lib/stores/useLoadingStore';
+import ErrorPopup from '@/components/modals/error';
 
 interface CharacterChatTemplateProps {
   character: AgentResponse | null;
@@ -31,7 +35,7 @@ export default function CharacterChatTemplate({
   conversationId,
   history,
 }: CharacterChatTemplateProps) {
-  const { isAuthenticated } = useAuthStore((state) => state);
+  const { isAuthenticated, user } = useAuthStore((state) => state);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [showOptions, setShowOptions] = useState(false);
@@ -59,8 +63,10 @@ export default function CharacterChatTemplate({
   const router = useRouter();
   const { isMobile, isDesktop } = useWindowSize();
   const { openModal, closeModal } = useModalStore();
-  console.log(messages)
-  // Используем хук для пагинации
+  const setLoading = useLoadingStore((state) => state.setLoading);
+  const { locale } = useLocale();
+  const { purchaseContent } = usePayment(locale);
+
   const {
     history: paginatedHistory,
     isLoadingMore,
@@ -72,7 +78,6 @@ export default function CharacterChatTemplate({
   // Scroll to bottom of messages
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-
 
   const onBack = () => {
     router.push('/');
@@ -101,7 +106,6 @@ export default function CharacterChatTemplate({
       // 3. Есть еще данные для загрузки
       // 4. Не идет загрузка в данный момент
       if (hasScrolledManually && scrollTop === 0 && hasMore && !isLoadingMore) {
-        console.log('Loading more messages...');
         loadMore();
       }
     },
@@ -124,11 +128,7 @@ export default function CharacterChatTemplate({
         sender: msg.role === 'user' ? 'user' : 'agent',
         time: formatDate(msg.timestamp),
         ...(msg?.metadata?.content && {
-          media: {
-            url: msg?.metadata?.content?.url,
-            type: msg?.metadata?.content.mimeType,
-            price: msg?.metadata?.content.price,
-          },
+          media: msg?.metadata?.content,
         }),
       }));
 
@@ -149,16 +149,11 @@ export default function CharacterChatTemplate({
         sender: msg.role === 'user' ? 'user' : 'agent',
         time: formatDate(msg.timestamp),
         ...(msg?.metadata?.content && {
-          media: {
-            url: msg?.metadata?.content?.url,
-            type: msg?.metadata?.content.mimeType,
-            price: msg?.metadata?.content.price,
-          },
+          media: msg?.metadata?.content,
         }),
       }));
 
       setMessages(preparedHistory);
-
     }
   }, [paginatedHistory]);
 
@@ -315,11 +310,7 @@ export default function CharacterChatTemplate({
           sender: 'agent',
           time: formatDate(response.timestamp),
           ...(response?.metadata?.content && {
-            media: {
-              url: response?.metadata?.content?.url,
-              type: response?.metadata?.content.mimeType,
-              price: response?.metadata?.content.price,
-            },
+            media: response.metadata.content,
           }),
         };
 
@@ -345,17 +336,59 @@ export default function CharacterChatTemplate({
     setShowPaywall(true);
   };
 
-  const handlePurchaseContent = async () => {
-    setShowPaywall(false);
-    // Остальная логика...
-  };
-
   const toggleOptions = () => {
     setShowOptions(!showOptions);
   };
 
   const handleViewProfile = () => {
     router.push(`/character/${character.id}`);
+  };
+
+  const handlePurchaseContent = async (
+    content: PrivateContent,
+    messageId: number
+  ) => {
+    setLoading(true);
+    await purchaseContent({
+      action: 'content_unlock',
+      targetType: 'content',
+      targetId: content?.id,
+      currency: 'OTT',
+    })
+      .then((res) => {
+        if(res.error){
+          openModal({
+            type: 'message',
+            content:(
+              <ErrorPopup error={res.error} onClose={closeModal}/>
+            )
+          })
+          return
+        }
+        const newUrl = res.url;
+        const newMessages = messages.map((item) => {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-expect-error
+          if (item.id === messageId) {
+            return {
+              ...item,
+              media: {
+                ...item.media,
+                url: newUrl,
+                purchased: true,
+              } as PrivateContent,
+            };
+          }
+          return item;
+        });
+        if (newMessages.length) {
+          setMessages(newMessages as Message[]);
+        }
+      })
+      .catch((err) => {
+        console.log("chat error", err)
+      })
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -385,6 +418,7 @@ export default function CharacterChatTemplate({
               togglePlayPause={togglePlayPause}
               onScroll={handleScroll}
               isMobile={isMobile}
+              handlePurchaseContent={handlePurchaseContent}
             />
           </div>
           <ChatInput
@@ -397,17 +431,18 @@ export default function CharacterChatTemplate({
             recordingTime={recordingTime}
             isAuthenticated={isAuthenticated}
             isMobile={isMobile}
+            balance={user?.balances.oTT || 0}
           />
         </div>
       </div>
-      {showPaywall && (
-        <PayWall
-          isMobile={isMobile}
-          character={character}
-          setShowPaywall={setShowPaywall}
-          handlePurchaseContent={handlePurchaseContent}
-        />
-      )}
+      {/*{showPaywall && (*/}
+      {/*  <PayWall*/}
+      {/*    isMobile={isMobile}*/}
+      {/*    character={character}*/}
+      {/*    setShowPaywall={setShowPaywall}*/}
+      {/*    handlePurchaseContent={handlePurchaseContent}*/}
+      {/*  />*/}
+      {/*)}*/}
     </div>
   );
 }

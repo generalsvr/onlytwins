@@ -52,7 +52,6 @@ export default function ClientLayout({
   useEffect(() => {
     const initializeAuth = async () => {
       setIsLoading(true);
-      console.log(initialAuthState)
       try {
         if (initialAuthState.user) {
           setUser(initialAuthState.user);

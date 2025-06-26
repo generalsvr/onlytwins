@@ -2,7 +2,7 @@ import { Message } from '@/lib/types/chat';
 import MessageItem from '@/components/chat/message-item';
 import SafeImage from '@/components/safe-image';
 import { RefObject } from 'react';
-import { AgentResponse } from '@/lib/types/agents';
+import { AgentResponse, PrivateContent } from '@/lib/types/agents';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MessageListProps {
@@ -16,6 +16,7 @@ interface MessageListProps {
   messagesEndRef: RefObject<HTMLDivElement | null>;
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
   isMobile: boolean;
+  handlePurchaseContent: (content: PrivateContent) => void;
 }
 
 export default function MessageList({
@@ -29,6 +30,7 @@ export default function MessageList({
   messagesEndRef,
   onScroll,
   isMobile,
+  handlePurchaseContent
 }: MessageListProps) {
   return (
     <div
@@ -93,10 +95,7 @@ export default function MessageList({
           >
             <div className="relative w-16 h-16 rounded-full overflow-hidden mb-4 ring-4 ring-pink-500/20">
               <img
-                src={
-                  `${character.meta.profileImage}` ||
-                  ''
-                }
+                src={`${character.meta.profileImage}` || ''}
                 alt={character.name}
                 className="object-cover w-full h-full"
               />
@@ -131,6 +130,7 @@ export default function MessageList({
                 togglePlayPause={togglePlayPause}
                 playingStates={playingStates}
                 isMobile={isMobile}
+                handlePurchaseContent={handlePurchaseContent}
               />
             </motion.div>
           ))}
@@ -148,10 +148,7 @@ export default function MessageList({
             >
               <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-pink-500/30">
                 <SafeImage
-                  src={
-                    `${character.meta.profileImage}` ||
-                    ''
-                  }
+                  src={`${character.meta.profileImage}` || ''}
                   alt={character.name}
                   fill
                   className="object-cover"

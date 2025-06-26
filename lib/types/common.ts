@@ -4,3 +4,9 @@ export interface Request {
   }
   status?: number
 }
+
+export interface Response {
+  error?:{
+    message: string;
+  }
+}

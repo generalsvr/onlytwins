@@ -143,18 +143,8 @@ export async function PUT(
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('API Error:', {
-        status: response.status,
-        data: data,
-        detail: data?.error?.details,
-        message: data?.error?.message,
-      });
-
       return NextResponse.json(
-        {
-          error: data?.error?.message || 'Request failed',
-          status: response.status,
-        },
+        { error: data.error },
         { status: response.status }
       );
     }

@@ -1,36 +1,46 @@
 import { agentService } from '@/lib/services/v1/agent';
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { AgentResponse } from '@/lib/types/agents';
 import { ValidationError } from '@/lib/types/auth';
-import { useAuthContext } from '@/contexts/AuthContext';
 
-interface FetchState<T> {
-  data: T | null;
-  isLoading: boolean;
+interface RefetchState {
+  isRefetching: boolean;
   error: Error | ValidationError | null;
 }
 
-export function useAgent(agentId: number) {
-  const { isMeLoading } = useAuthContext();
-  const [state, setState] = useState<FetchState<AgentResponse>>({
-    data: null,
-    isLoading: true,
+export function useAgent(
+  agentId: number,
+  onSuccess?: (data: AgentResponse) => void
+) {
+  const [state, setState] = useState<RefetchState>({
+    isRefetching: false,
     error: null,
   });
 
-  const fetchAgent = useCallback(async () => {
-    if (isMeLoading) return;
+  const refetch = useCallback(async () => {
+    setState({ isRefetching: true, error: null });
+
     try {
       const data = await agentService.getAgent(agentId);
-      setState({ data, isLoading: false, error: null });
+      setState({ isRefetching: false, error: null });
+
+      if (onSuccess) {
+        onSuccess(data);
+      }
+
+      return data;
     } catch (error) {
-      setState({ data: null, isLoading: false, error: error as Error | ValidationError });
+      setState({
+        isRefetching: false,
+        error: error as Error | ValidationError,
+      });
+      throw error;
     }
-  }, [agentId, isMeLoading]);
+  }, [agentId, onSuccess]);
 
-  useEffect(() => {
-    fetchAgent();
-  }, [fetchAgent]);
-
-  return state;
+  return {
+    refetch,
+    isRefetching: state.isRefetching,
+    error: state.error,
+  };
 }

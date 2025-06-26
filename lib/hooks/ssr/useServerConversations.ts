@@ -22,7 +22,6 @@ export const getConversationsSSR = cache(
         authState?.user?.id,
         agentId
       );
-      console.log(data)
       const uniqueConversations = data.reduce((acc, current) => {
         const existing = acc.find((item) => item.agent.id === current.agent.id);
         if (!existing) {

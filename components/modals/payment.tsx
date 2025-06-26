@@ -84,7 +84,6 @@ export default function PaymentModal({
     try {
       // Simulate payment processing
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log(`Processing ${selectedMethod} payment for $${amount}`);
     } catch (error) {
       console.error('Payment failed:', error);
     } finally {

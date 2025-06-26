@@ -1,4 +1,4 @@
-import { AgentResponse } from '@/lib/types/agents';
+import { AgentResponse, PrivateContent } from '@/lib/types/agents';
 import { Request } from '@/lib/types/common';
 
 export interface ChatRequest {
@@ -19,15 +19,7 @@ export interface ChatMessage {
   status: string;
   timestamp: string;
   metadata?: {
-    content:{
-      url?: string;
-      currency?: string;
-      name?: string;
-      paid?: boolean;
-      price?: number | null;
-      size?: number;
-      mimeType?: string;
-    }
+    content: PrivateContent;
   };
 }
 
@@ -37,13 +29,7 @@ export interface Message {
   sender: 'user' | 'agent';
   audio?: boolean;
   time: string;
-  media?:{
-    type?: string;
-    url?: string;
-    paid?: boolean;
-    price?: number | null;
-
-  }
+  media?: PrivateContent;
 }
 
 export interface ChatResponse extends Request {
@@ -53,7 +39,7 @@ export interface ChatResponse extends Request {
   responseTimeMs: number;
   timestamp: string;
   metadata?: {
-    content:{
+    content: {
       url?: string;
       currency?: string;
       name?: string;
@@ -61,7 +47,7 @@ export interface ChatResponse extends Request {
       price?: number | null;
       size?: number;
       mimeType?: string;
-    }
+    };
   };
 }
 

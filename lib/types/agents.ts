@@ -22,6 +22,7 @@ export interface PrivateContent {
   mimeType: 'string';
   price: number;
   url: string;
+  purchased: boolean;
 }
 
 interface Meta {

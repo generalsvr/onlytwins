@@ -132,7 +132,7 @@ export default function SubscriptionSection({ onBack }: SubscriptionSectionProps
   return (
     <div className="min-h-screen">
       {/* Back Button Header */}
-      <div className="sticky top-0 z-10 backdrop-blur-xl bg-zinc-900/80 border-b border-zinc-800/50">
+      <div className="sticky top-0 z-10">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center">
             <button

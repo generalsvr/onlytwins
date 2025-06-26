@@ -17,7 +17,7 @@ interface AuthState {
   setPlatform: (platform: string) => void;
   setError: (error: AuthError | null) => void;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  signup: (email: string, password: string, firstName: string, lastName: string, refCode?: string) => Promise<void>;
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<void>;
   updateProfile: (data: UpdateProfileRequest) => Promise<void>;
@@ -74,13 +74,13 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      signup: async (email: string, password: string, firstName: string, lastName: string) => {
+      signup: async (email: string, password: string, firstName: string, lastName: string, refCode?: string) => {
         const { setUser, setIsLoading, setError } = get();
         setIsLoading(true);
         setError(null);
 
         try {
-          const response: AuthResponse = await authService.register({ email, password, firstName, lastName });
+          const response: AuthResponse = await authService.register({ email, password, firstName, lastName, refCode });
           setUser(response.user);
         } catch (error) {
           const authError: AuthError = {

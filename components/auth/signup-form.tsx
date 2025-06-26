@@ -7,16 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Loader2,
-  X,
   Eye,
   EyeOff,
   Check,
   AlertCircle,
-  User,
   Mail,
   Lock,
-  Gift,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import { z } from 'zod';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -35,80 +32,65 @@ export default function SignupForm({ onClose }: SignupFormProps) {
   const { dictionary, locale } = useLocale();
 
   // Create localized validation schema
-  const signupSchema = useMemo(() => z.object({
-    email: z.string().email({ message: dictionary.auth.signup.errors.emailRequired }),
-    password: z
-      .string()
-      .min(8, { message: dictionary.auth.signup.errors.passwordMin })
-      .regex(/[A-Z]/, { message: dictionary.auth.signup.errors.passwordUppercase })
-      .regex(/[a-z]/, { message: dictionary.auth.signup.errors.passwordLowercase })
-      .regex(/[0-9]/, { message: dictionary.auth.signup.errors.passwordNumber }),
-    repeatPassword: z.string(),
-    firstName: z
-      .string()
-      .min(2, { message: dictionary.auth.signup.errors.firstNameMin })
-      .max(50, { message: dictionary.auth.signup.errors.firstNameMax }),
-    lastName: z
-      .string()
-      .min(2, { message: dictionary.auth.signup.errors.lastNameMin })
-      .max(50, { message: dictionary.auth.signup.errors.lastNameMax }),
-    referralCode: z
-      .string()
-      .regex(/^[A-Za-z0-9]{6,12}$/, { message: dictionary.auth.signup.errors.referralCodeInvalid })
-      .optional(),
-  }).refine((data) => data.password === data.repeatPassword, {
-    message: dictionary.auth.signup.errors.passwordsDontMatch,
-    path: ["repeatPassword"],
-  }), [locale]);
+  const signupSchema = useMemo(
+    () =>
+      z.object({
+        email: z
+          .string()
+          .email({ message: dictionary.auth.signup.errors.emailRequired }),
+        password: z
+          .string()
+          .min(8, { message: dictionary.auth.signup.errors.passwordMin })
+          .regex(/[A-Z]/, {
+            message: dictionary.auth.signup.errors.passwordUppercase,
+          })
+          .regex(/[a-z]/, {
+            message: dictionary.auth.signup.errors.passwordLowercase,
+          })
+          .regex(/[0-9]/, {
+            message: dictionary.auth.signup.errors.passwordNumber,
+          })
+      }),
+    [locale]
+  );
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    repeatPassword: '',
-    firstName: '',
-    lastName: '',
-    referralCode: '',
+    referralCode: '', // Скрытое поле для логики
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showRepeatPassword, setShowRepeatPassword] = useState(false);
-  const [isReferralDisabled, setIsReferralDisabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
-    repeatPassword?: string;
-    firstName?: string;
-    lastName?: string;
-    referralCode?: string;
     server?: string;
   }>({});
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Handle referral code from URL or cookies
+  // Handle referral code from URL or cookies (скрытая логика)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const refFromUrl = searchParams.get('ref');
       const refFromCookie = Cookies.get('referral_code');
 
       if (refFromUrl) {
-        setFormData(prev => ({ ...prev, referralCode: refFromUrl }));
-        setIsReferralDisabled(true);
+        setFormData((prev) => ({ ...prev, referralCode: refFromUrl }));
       } else if (refFromCookie) {
-        setFormData(prev => ({ ...prev, referralCode: refFromCookie }));
-        setIsReferralDisabled(true);
+        setFormData((prev) => ({ ...prev, referralCode: refFromCookie }));
       }
     }
   }, [searchParams]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
 
     // Clear field error when user starts typing
     if (errors[field as keyof typeof errors]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -118,7 +100,7 @@ export default function SignupForm({ onClose }: SignupFormProps) {
 
   const handleFieldBlur = (field: string) => {
     setFocusedField(null);
-    setTouchedFields(prev => new Set([...prev, field]));
+    setTouchedFields((prev) => new Set([...prev, field]));
   };
 
   // Real-time validation for better UX
@@ -126,13 +108,8 @@ export default function SignupForm({ onClose }: SignupFormProps) {
     if (!touchedFields.has(field)) return { isValid: null, message: '' };
 
     try {
-      const fieldSchema = signupSchema.shape[field as keyof typeof signupSchema.shape];
-      if (field === 'repeatPassword') {
-        return {
-          isValid: formData.password === formData.repeatPassword,
-          message: formData.password !== formData.repeatPassword ? dictionary.auth.signup.errors.passwordsDontMatch : ''
-        };
-      }
+      const fieldSchema =
+        signupSchema.shape[field as keyof typeof signupSchema.shape];
       fieldSchema.parse(formData[field as keyof typeof formData]);
       return { isValid: true, message: '' };
     } catch (error) {
@@ -157,10 +134,6 @@ export default function SignupForm({ onClose }: SignupFormProps) {
       setErrors({
         email: fieldErrors.email?.[0],
         password: fieldErrors.password?.[0],
-        repeatPassword: fieldErrors.repeatPassword?.[0],
-        firstName: fieldErrors.firstName?.[0],
-        lastName: fieldErrors.lastName?.[0],
-        referralCode: fieldErrors.referralCode?.[0],
       });
       return;
     }
@@ -168,10 +141,20 @@ export default function SignupForm({ onClose }: SignupFormProps) {
     setIsLoading(true);
 
     try {
-      await signup(formData.email, formData.password, formData.firstName, formData.lastName);
+      // Используем пустые строки для firstName и lastName, так как они больше не собираются в форме
+      await signup(
+        formData.email,
+        formData.password,
+        '',
+        '',
+        formData.referralCode ? formData.referralCode : undefined
+      );
+
+      // Сохраняем referral code если он есть
       if (formData.referralCode && typeof window !== 'undefined') {
         Cookies.set('referral_code', formData.referralCode, { expires: 60 });
       }
+
       onClose();
       router.push('/profile');
     } catch (err) {
@@ -186,8 +169,6 @@ export default function SignupForm({ onClose }: SignupFormProps) {
           const field = detail.loc[detail.loc.length - 1];
           if (field === 'email') newErrors.email = detail.msg;
           if (field === 'password') newErrors.password = detail.msg;
-          if (field === 'first_name') newErrors.firstName = detail.msg;
-          if (field === 'last_name') newErrors.lastName = detail.msg;
         });
         setErrors(newErrors);
       } else if (error.status === 409) {
@@ -195,7 +176,8 @@ export default function SignupForm({ onClose }: SignupFormProps) {
         setErrors({ email: errorMessage });
       } else if (error.status === 400 && error.message.includes('referral')) {
         errorMessage = dictionary.auth.signup.errors.invalidReferralCode;
-        setErrors({ referralCode: errorMessage });
+        // Для referral code ошибки показываем как server error, так как поле скрыто
+        setErrors({ server: errorMessage });
       } else {
         console.error('Signup error:', error);
       }
@@ -212,7 +194,9 @@ export default function SignupForm({ onClose }: SignupFormProps) {
         <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <Sparkles size={32} className="text-blue-400" />
         </div>
-        <p className="text-zinc-300 text-lg font-medium mb-2">{dictionary.auth.signup.telegramAuth}</p>
+        <p className="text-zinc-300 text-lg font-medium mb-2">
+          {dictionary.auth.signup.telegramAuth}
+        </p>
         <p className="text-zinc-400">
           {dictionary.auth.signup.telegramAuthDesc}
         </p>
@@ -220,78 +204,51 @@ export default function SignupForm({ onClose }: SignupFormProps) {
     );
   }
 
-  const formFields = useMemo(() => [
-    {
-      id: 'firstName',
-      label: dictionary.auth.signup.firstName,
-      type: 'text',
-      placeholder: dictionary.auth.signup.enterFirstName,
-      icon: User,
-      required: true,
-    },
-    {
-      id: 'lastName',
-      label: dictionary.auth.signup.lastName,
-      type: 'text',
-      placeholder: dictionary.auth.signup.enterLastName,
-      icon: User,
-      required: true,
-    },
-    {
-      id: 'email',
-      label: dictionary.auth.signup.email,
-      type: 'email',
-      placeholder: dictionary.auth.signup.enterEmail,
-      icon: Mail,
-      required: true,
-    },
-    {
-      id: 'password',
-      label: dictionary.auth.signup.password,
-      type: 'password',
-      placeholder: dictionary.auth.signup.enterPassword,
-      icon: Lock,
-      required: true,
-      showToggle: true,
-    },
-    {
-      id: 'repeatPassword',
-      label: dictionary.auth.signup.repeatPassword,
-      type: 'password',
-      placeholder: dictionary.auth.signup.repeatYourPassword,
-      icon: Lock,
-      required: true,
-      showToggle: true,
-    },
-    {
-      id: 'referralCode',
-      label: dictionary.auth.signup.referralCode,
-      type: 'text',
-      placeholder: dictionary.auth.signup.enterReferralCode,
-      icon: Gift,
-      required: false,
-    },
-  ], [dictionary.auth.signup]);
+  const formFields = useMemo(
+    () => [
+      {
+        id: 'email',
+        label: dictionary.auth.signup.email,
+        type: 'email',
+        placeholder: dictionary.auth.signup.enterEmail,
+        icon: Mail,
+        required: true,
+      },
+      {
+        id: 'password',
+        label: dictionary.auth.signup.password,
+        type: 'password',
+        placeholder: dictionary.auth.signup.enterPassword,
+        icon: Lock,
+        required: true,
+        showToggle: true,
+      },
+    ],
+    [dictionary.auth.signup]
+  );
 
   return (
-    <div className="p-6 pb-0 ">
+    <div className="p-6 pb-0">
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-pink-500/25">
           <Sparkles size={32} className="text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-white">{dictionary.auth.signup.createAccount}</h2>
+        <h2 className="text-2xl font-bold text-white">
+          {dictionary.auth.signup.createAccount}
+        </h2>
         <p className="text-zinc-400">{dictionary.auth.signup.joinCommunity}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 mt-4">
         {formFields.map((field, index) => {
           const validation = getFieldValidation(field.id);
-          const hasError = errors[field.id as keyof typeof errors] || (validation.isValid === false && validation.message);
+          const hasError =
+            errors[field.id as keyof typeof errors] ||
+            (validation.isValid === false && validation.message);
           const isValid = validation.isValid === true;
           const isFocused = focusedField === field.id;
           const isPasswordField = field.type === 'password';
-          const showPasswordValue = field.id === 'password' ? showPassword : showRepeatPassword;
 
           return (
             <motion.div
@@ -315,26 +272,26 @@ export default function SignupForm({ onClose }: SignupFormProps) {
               <div className="relative">
                 <Input
                   id={field.id}
-                  type={isPasswordField && !showPasswordValue ? 'password' : 'text'}
+                  type={isPasswordField && !showPassword ? 'password' : 'text'}
                   placeholder={field.placeholder}
                   value={formData[field.id as keyof typeof formData]}
                   onChange={(e) => handleInputChange(field.id, e.target.value)}
                   onFocus={() => handleFieldFocus(field.id)}
                   onBlur={() => handleFieldBlur(field.id)}
                   required={field.required}
-                  disabled={isLoading || (field.id === 'referralCode' && isReferralDisabled)}
+                  disabled={isLoading}
                   className={`
                     pl-4 pr-12 py-3 bg-zinc-800/50 backdrop-blur-sm border transition-all duration-200
                     focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50
-                    ${isReferralDisabled && field.id === 'referralCode' && 'pl-10'}
-                    ${hasError
-                    ? 'border-red-500/50 bg-red-500/5'
-                    : isValid
-                      ? 'border-green-500/50 bg-green-500/5'
-                      : isFocused
-                        ? 'border-pink-500/50 bg-zinc-800/70'
-                        : 'border-zinc-700/50 hover:border-zinc-600/50'
-                  }
+                    ${
+                      hasError
+                        ? 'border-red-500/50 bg-red-500/5'
+                        : isValid
+                          ? 'border-green-500/50 bg-green-500/5'
+                          : isFocused
+                            ? 'border-pink-500/50 bg-zinc-800/70'
+                            : 'border-zinc-700/50 hover:border-zinc-600/50'
+                    }
                   `}
                 />
 
@@ -342,16 +299,10 @@ export default function SignupForm({ onClose }: SignupFormProps) {
                 {field.showToggle && (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (field.id === 'password') {
-                        setShowPassword(!showPassword);
-                      } else {
-                        setShowRepeatPassword(!showRepeatPassword);
-                      }
-                    }}
+                    onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-zinc-200 transition-colors"
                   >
-                    {showPasswordValue ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 )}
 
@@ -363,13 +314,6 @@ export default function SignupForm({ onClose }: SignupFormProps) {
                     ) : (
                       <AlertCircle size={18} className="text-red-500" />
                     )}
-                  </div>
-                )}
-
-                {/* Special styling for referral code */}
-                {field.id === 'referralCode' && formData.referralCode && (
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <Gift size={18} className="text-yellow-400" />
                   </div>
                 )}
               </div>
@@ -384,7 +328,10 @@ export default function SignupForm({ onClose }: SignupFormProps) {
                     className="flex items-center space-x-2 text-red-400 text-sm"
                   >
                     <AlertCircle size={14} />
-                    <span>{errors[field.id as keyof typeof errors] || validation.message}</span>
+                    <span>
+                      {errors[field.id as keyof typeof errors] ||
+                        validation.message}
+                    </span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -426,7 +373,7 @@ export default function SignupForm({ onClose }: SignupFormProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.4 }}
         >
           <Button
             type="submit"
@@ -452,32 +399,10 @@ export default function SignupForm({ onClose }: SignupFormProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
+        transition={{ delay: 0.5 }}
       >
         <SocialAuth isLoading={isLoading} setErrors={setErrors} />
       </motion.div>
-
-      {/* Referral bonus info */}
-      {/*<AnimatePresence>*/}
-      {/*  {formData.referralCode && (*/}
-      {/*    <motion.div*/}
-      {/*      initial={{ opacity: 0, scale: 0.95 }}*/}
-      {/*      animate={{ opacity: 1, scale: 1 }}*/}
-      {/*      exit={{ opacity: 0, scale: 0.95 }}*/}
-      {/*      className="p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-xl mt-4"*/}
-      {/*    >*/}
-      {/*      <div className="flex items-center space-x-3">*/}
-      {/*        <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">*/}
-      {/*          <Gift size={18} className="text-yellow-400" />*/}
-      {/*        </div>*/}
-      {/*        <div>*/}
-      {/*          <p className="text-yellow-400 font-medium">{dictionary.auth.signup.referralBonus}</p>*/}
-      {/*          <p className="text-yellow-300/80 text-sm">{dictionary.auth.signup.bonusTokensDesc}</p>*/}
-      {/*        </div>*/}
-      {/*      </div>*/}
-      {/*    </motion.div>*/}
-      {/*  )}*/}
-      {/*</AnimatePresence>*/}
     </div>
   );
 }
