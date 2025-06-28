@@ -293,7 +293,7 @@ export default function SubscriptionSection({
 
   const handleCancelSubscription = async () => {
     setLoading(true);
-    await cancelSubscription(currentSubscription?.billingCycle)
+    await cancelSubscription(currentSubscription?.stripeSubscriptionId)
       .then((res) => {
         if (res.error) {
           errorHandler(res.error as AxiosError);
