@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ConversationSummary } from '@/lib/types/chat';
-import { conversationService } from '@/lib/services/v1/conversations';
+import { conversationService } from '@/lib/services/v1/client/conversations';
 
 interface UseConversationsOptions {
   initialData?: ConversationSummary[];

@@ -1,4 +1,4 @@
-import { agentService } from '@/lib/services/v1/agent';
+import { agentService } from '@/lib/services/v1/client/agent';
 import { useEffect, useState, useCallback } from 'react';
 import { AgentResponse } from '@/lib/types/agents';
 import { ValidationError } from '@/lib/types/auth';

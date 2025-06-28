@@ -14,6 +14,7 @@ import { usePayment } from '@/lib/hooks/usePayment';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useLocale } from '@/contexts/LanguageContext';
+import { useModalStore } from '@/lib/stores/modalStore';
 
 interface TokenPackage {
   id: number;
@@ -177,6 +178,7 @@ export default function TokensModal() {
   return (
     <div className="bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl overflow-hidden">
       <AnimatePresence mode="wait" custom={currentStep === 'payment' ? 1 : -1}>
+
         {currentStep === 'selection' ? (
           <motion.div
             key="selection"
@@ -191,6 +193,7 @@ export default function TokensModal() {
             }}
             className="grid gap-4 p-4 md:grid-cols-2 lg:grid-cols-3"
           >
+
             {tokenPackages.map((pkg, index) => (
               <motion.button
                 key={pkg.id}
@@ -209,7 +212,8 @@ export default function TokensModal() {
                 {/* Popular Badge */}
                 {pkg.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold shadow-lg">
+                    <div
+                      className="flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold shadow-lg">
                       <Star className="w-3 h-3" />
                       MOST POPULAR
                     </div>
@@ -240,7 +244,8 @@ export default function TokensModal() {
                   </div>
 
                   {pkg.discount && pkg.discount !== '0%' && (
-                    <div className="inline-block px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 mb-2">
+                    <div
+                      className="inline-block px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 mb-2">
                       <span className="text-xs font-bold text-green-300">
                         Save {pkg.discount}
                       </span>
@@ -352,15 +357,15 @@ export default function TokensModal() {
                       </div>
                       {selectedPackage.effectiveTokens >
                         selectedPackage.baseTokens && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-400">Bonus tokens:</span>
-                          <span className="text-green-400">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">Bonus tokens:</span>
+                            <span className="text-green-400">
                             +
-                            {selectedPackage.effectiveTokens -
-                              selectedPackage.baseTokens}
+                              {selectedPackage.effectiveTokens -
+                                selectedPackage.baseTokens}
                           </span>
-                        </div>
-                      )}
+                          </div>
+                        )}
                       <div className="flex justify-between text-sm">
                         <span className="text-zinc-400">Cost per token:</span>
                         <span className="text-white">

@@ -23,7 +23,7 @@ export default function AuthModal({
   return (
     <div className={'h-full'} >
       <div
-        className={` ${isMobile ? 'w-full' : 'min-w-[420px]'}  h-max bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl`}
+        className={` ${isMobile ? 'w-full h-full' : 'min-w-[420px]'} bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl `}
       >
         <AnimatePresence mode="wait" initial={false}>
           {mode === 'login' ? (

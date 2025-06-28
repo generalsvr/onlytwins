@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   X
 } from 'lucide-react';
+import useWindowSize from '@/lib/hooks/useWindowSize';
 
 interface ErrorPopupProps {
   error: {
@@ -22,11 +23,11 @@ export default function ErrorPopup({
   error,
   onClose
 }: ErrorPopupProps) {
-
+  const {isMobile} = useWindowSize();
   return (
     <AnimatePresence>
       {/* Modal */}
-      <div className="w-full max-w-md mx-auto">
+      <div className={`w-full max-w-md mx-auto ${isMobile && 'h-full flex justify-center items-center'}`}>
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -73,15 +74,7 @@ export default function ErrorPopup({
                 <p className="text-zinc-400 leading-relaxed">{error.message}</p>
               </div>
 
-              {/* Close Button */}
-              <motion.button
-                onClick={onClose}
-                className="absolute -top-2 -right-2 w-8 h-8 bg-zinc-700/50 hover:bg-zinc-600/50 backdrop-blur-sm rounded-full flex items-center justify-center border border-zinc-600/30 transition-all duration-200"
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <X className="w-4 h-4 text-zinc-400" />
-              </motion.button>
+
             </div>
           </div>
         </motion.div>

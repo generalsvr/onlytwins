@@ -15,7 +15,7 @@ import FailedPayment from '@/components/modals/failed-payment';
 import { Star, X } from 'lucide-react';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import { useNotificationStore } from '@/lib/stores/notificationStore';
-import { authService } from '@/lib/services/v1/auth';
+import { authService } from '@/lib/services/v1/client/auth';
 import { Loader } from '@/components/ui/loader';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { UserResponse } from '@/lib/types/auth';
@@ -108,7 +108,7 @@ export default function ClientLayout({
             isChatPage
               ? 'mx-auto max-w-[1440px]'
               : isMobile
-                ? `w-full h-full ${pathname.includes('chat') && 'overflow-hidden'}`
+                ? `w-full h-full ${pathname.includes('chat/') && 'overflow-hidden'}`
                 : 'mx-auto max-w-[1440px] pt-6 px-4'
           }
         >

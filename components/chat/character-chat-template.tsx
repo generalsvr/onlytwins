@@ -13,7 +13,7 @@ import ChatInput from '@/components/chat/chat-input';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import { useConversationHistory } from '@/lib/hooks/useConversationHistory';
 import { AgentResponse, PrivateContent } from '@/lib/types/agents';
-import { chatService } from '@/lib/services/v1/chat';
+import { chatService } from '@/lib/services/v1/client/chat';
 import { ChatMessage, ChatRequest, Message } from '@/lib/types/chat';
 
 import { v4 } from 'uuid';
@@ -23,6 +23,8 @@ import { useLocale } from '@/contexts/LanguageContext';
 import { usePayment } from '@/lib/hooks/usePayment';
 import { useLoadingStore } from '@/lib/stores/useLoadingStore';
 import ErrorPopup from '@/components/modals/error';
+import { useErrorHandler } from '@/lib/hooks/useErrorHandler';
+import { Axios, AxiosError } from 'axios';
 
 interface CharacterChatTemplateProps {
   character: AgentResponse | null;
@@ -66,7 +68,7 @@ export default function CharacterChatTemplate({
   const setLoading = useLoadingStore((state) => state.setLoading);
   const { locale } = useLocale();
   const { purchaseContent } = usePayment(locale);
-
+  const { errorHandler } = useErrorHandler();
   const {
     history: paginatedHistory,
     isLoadingMore,
@@ -357,12 +359,7 @@ export default function CharacterChatTemplate({
     })
       .then((res) => {
         if(res.error){
-          openModal({
-            type: 'message',
-            content:(
-              <ErrorPopup error={res.error} onClose={closeModal}/>
-            )
-          })
+          errorHandler(res.error as AxiosError)
           return
         }
         const newUrl = res.url;

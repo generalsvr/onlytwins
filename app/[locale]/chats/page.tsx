@@ -63,12 +63,12 @@ export default function ChatPage({ initialConversations, error: initialError, pa
   return (
     <div className={`min-h-screen ${isMobile && 'pb-20'}`}>
       {/* Header with backdrop blur */}
-      <div className="sticky top-0 z-50">
+      <div className="top-0 z-50">
         {/* Backdrop blur overlay */}
-        <div className="absolute inset-0" />
+        <div className={`absolute inset-0 ${isMobile && "bg-zinc-800/60 backdrop-blur-xl  border border-zinc-700/30 shadow-2xl"}`} />
 
         <div className="relative p-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto ">
             {/* Title */}
             <div className="flex items-center justify-between mb-6">
               <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-white`}>
@@ -195,7 +195,7 @@ export default function ChatPage({ initialConversations, error: initialError, pa
                       <img
                         src={`${chat.agent.meta.profileImage}`}
                         alt={chat.agent.name}
-                        className="object-cover"
+                        className="w-full h-full object-cover"
                       />
                     </div>
 

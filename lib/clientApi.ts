@@ -3,6 +3,7 @@ import humps from 'humps';
 import { CustomAxiosRequestConfig } from '@/lib/types/axios';
 import { getTokens, clearTokens, setTokens } from '@/lib/utils';
 import { TokenResponse } from '@/lib/types/auth';
+import handleApiError from '@/lib/errorHandler';
 
 const clientApi: AxiosInstance = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_HOST_URL}/api`,

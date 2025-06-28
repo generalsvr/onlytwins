@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { authServerService } from '@/lib/ssr/auth-ssr';
 import { UserResponse } from '@/lib/types/auth';
+import { getCurrentUser } from '@/lib/services/v1/server/auth';
 
 interface AuthServerResponse {
   user: UserResponse | null;
@@ -12,7 +13,7 @@ interface AuthServerResponse {
   }
 }
 
-export default async function useAuthServerState(): Promise<AuthServerResponse> {
+export default async function getAuthState(): Promise<AuthServerResponse> {
 
   try {
     const cookieStore = await cookies();
@@ -35,7 +36,7 @@ export default async function useAuthServerState(): Promise<AuthServerResponse> 
       };
     }
 
-    const user = await authServerService.getCurrentUser();
+    const user = await getCurrentUser();
 
     return {
       user,

@@ -66,7 +66,7 @@ export default function MessageItem({
             <img
               src={`${character.meta.profileImage}` || ''}
               alt={character.name}
-              className="object-cover"
+              className="w-full h-full object-cover"
             />
           </motion.div>
         )}

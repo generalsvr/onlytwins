@@ -130,7 +130,7 @@ export default function MainNavigation() {
           indicatorRef.current.style.width = `${offsetWidth - 16}px`;
           indicatorRef.current.style.height = '3px';
           indicatorRef.current.style.left = `${offsetLeft + 8}px`;
-          indicatorRef.current.style.top = '4px';
+          indicatorRef.current.style.top = '0px';
         } else {
           // Desktop: vertical indicator
           indicatorRef.current.style.width = '4px';

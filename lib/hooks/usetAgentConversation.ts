@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ConversationSummary } from '@/lib/types/chat';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { conversationService } from '@/lib/services/v1/conversations';
+import { conversationService } from '@/lib/services/v1/client/conversations';
 
 interface UseConversationsResult {
   conversations: ConversationSummary | undefined;

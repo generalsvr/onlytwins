@@ -1,11 +1,11 @@
 // lib/ssr/agents-ssr.ts
 import { cache } from 'react';
-import useAuthServerState from '@/lib/hooks/ssr/useAuthServerState';
-import { getAgent, getPublicAgent } from '@/lib/services/v1/ssr/agent';
+import getAuthState from '@/lib/services/v1/server/utils/getAuthState';
+import { getAgent, getPublicAgent } from '@/lib/services/v1/server/agent';
 
 export const getAgentSSR = cache(async (agentId: number) => {
   try {
-    const authState = await useAuthServerState();
+    const authState = await getAuthState();
 
     const data = authState.isAuthenticated
       ? await getAgent(agentId)

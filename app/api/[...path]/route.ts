@@ -70,9 +70,10 @@ export async function POST(
 
     const data = await response.json();
     const resp = NextResponse.json(data);
+
     if (!response.ok) {
       return NextResponse.json(
-        { error: data?.message || 'Request failed' },
+        { error: data.error },
         { status: response.status }
       );
     }
@@ -157,7 +158,44 @@ export async function PUT(
     return NextResponse.json(error);
   }
 }
+export async function DELETE(
+  request: Request,
+  { params }: { params: { path: string[] } }
+) {
+  const resolvedParams = await params;
+  const path = resolvedParams.path.join('/');
+  const url = `${EXTERNAL_API_URL}/${path}`;
+  const body = await request.json();
+  const authToken = request.headers.get('Authorization');
 
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        ...(authToken && { Authorization: authToken }),
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: data.error },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error('API Error:', {
+      message: error.message,
+    });
+    return NextResponse.json(error);
+  }
+}
 export async function PATCH(
   request: Request,
   { params }: { params: { path: string[] } }
@@ -184,7 +222,7 @@ export async function PATCH(
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: data?.message || 'Request failed' },
+        { error: data.error },
         { status: response.status }
       );
     }

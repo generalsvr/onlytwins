@@ -1,5 +1,5 @@
 import CharacterProfileTemplate from '@/components/character-profile-template';
-import { getAgentSSR } from '@/lib/hooks/ssr/useServerAgent';
+import { getAgentSSR } from '@/lib/services/v1/server/utils/useServerAgent';
 import { Metadata } from 'next';
 import { cache } from 'react';
 

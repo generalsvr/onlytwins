@@ -7,7 +7,7 @@ import ClientLayout from '@/app/[locale]/(layouts)/ClientLayout';
 import { Inter } from 'next/font/google';
 import Modal from '@/components/modal';
 import ErrorBoundary from '@/app/[locale]/(providers)/ErrorBoundary';
-import useAuthServerState from '@/lib/hooks/ssr/useAuthServerState';
+import getAuthState from '@/lib/services/v1/server/utils/getAuthState';
 import { getDictionary } from '@/dictionaries';
 import { Metadata } from 'next';
 
@@ -29,7 +29,7 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const initialAuthState = await useAuthServerState();
+  const initialAuthState = await getAuthState();
   const dict = await getDictionary(locale as 'en' | 'ru' | 'zh');
   return (
     <html lang="en">

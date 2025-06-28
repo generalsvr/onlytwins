@@ -1,7 +1,7 @@
-import useAuthServerState from '@/lib/hooks/ssr/useAuthServerState';
+import getAuthState from '@/lib/services/v1/server/utils/getAuthState';
 import { ConversationSummary } from '@/lib/types/chat';
 import { cache } from 'react';
-import { serverConversationsService } from '@/lib/services/v1/ssr/conversations';
+import { serverConversationsService } from '@/lib/services/v1/server/conversations';
 
 interface ServerConversationsResponse {
   conversations: ConversationSummary[] | null;
@@ -10,7 +10,7 @@ interface ServerConversationsResponse {
 export const getConversationsSSR = cache(
   async (agentId?: number | undefined): Promise<ServerConversationsResponse> => {
     try {
-      const authState = await useAuthServerState();
+      const authState = await getAuthState();
 
       if (!authState.isAuthenticated || !authState.user) {
         return {

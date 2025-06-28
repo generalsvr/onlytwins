@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { authService } from '@/lib/services/v1/auth';
+import { authService } from '@/lib/services/v1/client/auth';
 import { AuthError } from '@/lib/types/auth';
 import { UserResponse, AuthResponse, UpdateProfileRequest, TelegramAuthRequest } from '@/lib/types/auth';
 import { clearTokens } from '@/lib/utils';

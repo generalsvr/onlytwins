@@ -1,7 +1,8 @@
 "use server"
-import { getAgentsSSR } from '@/lib/ssr/agent-ssr';
+
 import ExplorePage from '@/components/feed-page';
 import { Metadata } from 'next';
+import { getAgents } from '@/lib/services/v1/server/utils/getAgents';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -11,6 +12,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 export default async function FeedPageWrapper() {
 
-  const { data } = await getAgentsSSR();
+  const { data } = await getAgents();
   return <ExplorePage agents={data} />;
 }

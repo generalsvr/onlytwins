@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 :root {
   --foreground-rgb: 255, 255, 255;
   --background-rgb: 0, 0, 0;
@@ -52,8 +53,11 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  overflow-y: hidden;
   scrollbar-width: thin;
   scrollbar-color: #4b5563 #f1f1f1;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 /* Responsive typography */
 @layer base {
@@ -1529,8 +1533,8 @@ html {
 /* Fix for iOS height issues */
 html,
 body {
+  min-height: -webkit-fill-available;
   height: 100%;
-  overflow-x: hidden;
   overflow-y: auto;
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Wallet,
   Users,
@@ -22,6 +22,7 @@ import useWindowSize from '@/lib/hooks/useWindowSize';
 import { useLoadingStore } from '@/lib/stores/useLoadingStore';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/contexts/LanguageContext';
+import { billingService } from '@/lib/services/v1/client/billing';
 
 
 export default function ProfilePage() {
@@ -160,6 +161,7 @@ export default function ProfilePage() {
   const handleProfileEdit = () => {
     handleNavigation('/profile/information');
   };
+
 
   return (
     <div className={`min-h-screen ${isMobile ? 'pb-24' : 'pb-8'}`}>

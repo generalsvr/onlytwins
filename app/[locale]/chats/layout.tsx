@@ -1,5 +1,5 @@
 import ChatPage from '@/app/[locale]/chats/page';
-import { getConversationsSSR } from '@/lib/hooks/ssr/useServerConversations';
+import { getConversationsSSR } from '@/lib/services/v1/server/utils/useServerConversations';
 import { Metadata } from 'next';
 
 interface ChatPageProps {

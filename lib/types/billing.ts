@@ -1,5 +1,5 @@
 // billing.types.ts
-
+import { Response } from '@/lib/types/common';
 // Request types
 export interface CreatePaymentLinkRequest {
   product_name: string;
@@ -15,26 +15,20 @@ export interface CreatePaymentLinkRequest {
 }
 
 export interface CreateSubscriptionRequest {
-  customerId: string;
-  productName: string;
-  unitAmount: number;
-  currency: string;
-  interval: 'month' | 'year';
-  cancelAt?: string;
-  customerName?: string;
-  customerPhone?: string;
+  subscriptionId: string;
   successUrl: string;
   cancelUrl: string;
   metadata?: Record<string, string>;
 }
 
 export interface CancelSubscriptionRequest {
-  subscription_id: string;
-  at_period_end: boolean;
+  subscriptionId: string;
+  atPeriodEnd: boolean;
+  action: string;
 }
 
 // Response types
-export interface SessionResponse {
+export interface SessionResponse extends Response {
   id: string;
   url: string;
   customerId: string;
@@ -43,7 +37,7 @@ export interface SessionResponse {
   paymentStatus: string;
 }
 
-export interface SubscriptionResponse {
+export interface SubscriptionResponse extends Response {
   id: string;
   customer_id: string;
   status: string;
@@ -58,7 +52,37 @@ export interface WebhookResponse {
   processed: boolean;
   message: string;
 }
-
+export interface SubscriptionTier {
+  billingCycle: string;
+  description: string;
+  displayPrice: string;
+  name: string;
+  ottAllocation: number;
+  priceCents: number;
+  subscriptionId: string;
+}
+export interface SubscriptionResponse {
+  currency: string;
+  ott_allocation_per_tier: number;
+  tiers: SubscriptionTier[];
+}
+export interface GlobalSubscription {
+  activatedAt: string;
+  billingCycle: string;
+  monthlyOttAllocation: string;
+  priceCents: number;
+  sessionId: number;
+  status: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  type: string;
+}
+export interface UserSubscriptionResponse {
+  creatorSubscriptions: string;
+  globalSubscription: GlobalSubscription;
+  subscriptionCount: number;
+  totalMonthlyOtt: number;
+}
 // Error types
 export interface ValidationError {
   loc: (string | number)[];

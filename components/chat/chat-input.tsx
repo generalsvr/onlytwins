@@ -276,7 +276,7 @@ export default function ChatInput({
           </AnimatePresence>
 
           {/* Quick actions or suggestions */}
-          {!hasMessage && !isRecording && (
+          {!hasMessage && !isRecording && !isMobile && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
