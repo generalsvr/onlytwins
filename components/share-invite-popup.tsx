@@ -16,7 +16,7 @@ export default function ShareInvitePopup({
 }: ShareInvitePopupProps) {
   const [inviteCode, setInviteCode] = useState('TWINS4U');
   const [copied, setCopied] = useState(false);
-  const appLink = 'https://t.me/onlytwins_app_bot';
+
 
 
   // Generate a random invite code on mount

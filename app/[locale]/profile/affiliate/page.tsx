@@ -107,9 +107,10 @@ export default function AffiliateSection({ onBack }: AffiliateSectionProps) {
               <span className="font-mono font-bold text-2xl text-white tracking-wider">
                 mytwins_{user?.id}
               </span>
+
               <motion.button
                 onClick={copyToClipboard}
-                className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-xl transition-all duration-300 backdrop-blur-sm border border-white/20"
+                className=""
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
