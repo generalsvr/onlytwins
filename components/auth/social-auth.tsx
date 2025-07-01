@@ -4,9 +4,13 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { NextRouter } from 'next/router';
-import { TelegramAuthData, TelegramLoginButton } from '@/components/telegram-login';
+import {
+  TelegramAuthData,
+  TelegramLoginButton,
+} from '@/components/telegram-login';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { TelegramAuthRequest } from '@/lib/types/auth';
+import { useModalStore } from '@/lib/stores/modalStore';
 interface SocialAuthProps {
   isLoading: boolean;
   setErrors: React.Dispatch<
@@ -16,7 +20,8 @@ interface SocialAuthProps {
 
 export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
   const router = useRouter();
-   const {telegramAuth, platform } = useAuthStore();
+  const { telegramAuth, platform } = useAuthStore();
+  const closeModal = useModalStore((state) => state.closeModal);
   const handleGoogleSignup = () => {
     try {
       router.push('/api/auth/google/authorize');
@@ -34,24 +39,31 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
       setErrors({ server: 'Failed to initiate Twitter signup.' });
     }
   };
-   const processTelegramAuth = async (data: TelegramAuthData) => {
+  const processTelegramAuth = async (data: TelegramAuthData) => {
     try {
       // Create URL-encoded query string for initData (matching Telegram's format)
-      const dataParams = []
-      const fields = ['auth_date', 'first_name', 'id', 'last_name', 'photo_url', 'username']
-      
+      const dataParams = [];
+      const fields = [
+        'auth_date',
+        'first_name',
+        'id',
+        'last_name',
+        'photo_url',
+        'username',
+      ];
+
       for (const field of fields) {
         if (data[field] !== undefined && data[field] !== null) {
-          dataParams.push(`${field}=${encodeURIComponent(data[field])}`)
+          dataParams.push(`${field}=${encodeURIComponent(data[field])}`);
         }
       }
-      
+
       // Add hash to the query string
-      dataParams.push(`hash=${data.hash}`)
-      
+      dataParams.push(`hash=${data.hash}`);
+
       // Create URL-encoded initData string
-      const initDataString = dataParams.sort().join('&')
-      
+      const initDataString = dataParams.sort().join('&');
+
       // Prepare Telegram auth data
       const telegramAuthData = {
         initData: initDataString,
@@ -61,20 +73,17 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
         username: data.username || null,
         photoUrl: data.photo_url || null,
         authDate: data.auth_date,
-        hash: data.hash
-      }
-      
-     await telegramAuth(telegramAuthData).then(() => {
-       router.push('/profile')
-     })
+        hash: data.hash,
+      };
 
-
+      await telegramAuth(telegramAuthData).then(() => {
+        closeModal();
+        router.push('/profile');
+      });
     } catch (err: any) {
-      console.error('Telegram auth processing error:', err)
-    
-    } 
-  }
-
+      console.error('Telegram auth processing error:', err);
+    }
+  };
 
   return (
     <>
@@ -83,9 +92,7 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
           <span className="w-full border-t border-zinc-700" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="px-2 text-zinc-400">
-            Or continue with
-          </span>
+          <span className="px-2 text-zinc-400">Or continue with</span>
         </div>
       </div>
 
@@ -110,12 +117,12 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
         {/*</Button>*/}
         <div className={'max-w-max h-full'}>
           <TelegramLoginButton
-              onAuthCallback={(data) => processTelegramAuth(data)}
-              botUsername={'onlytwins_chat_bot'}
-              buttonSize="large" // "large" | "medium" | "small"
-              cornerRadius={5} // 0 - 20
-              showAvatar={false} // true | false
-              lang="en"
+            onAuthCallback={(data) => processTelegramAuth(data)}
+            botUsername={'onlytwins_chat_bot'}
+            buttonSize="large" // "large" | "medium" | "small"
+            cornerRadius={5} // 0 - 20
+            showAvatar={false} // true | false
+            lang="en"
           />
         </div>
         {/*<Button*/}
