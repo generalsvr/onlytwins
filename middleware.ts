@@ -92,7 +92,6 @@ export async function middleware(request: NextRequest) {
 
   const accessToken = request.cookies.get('access_token')?.value
   const refreshToken = request.cookies.get('refresh_token')?.value
-  console.log(refreshToken, accessToken)
   if ((!accessToken || isTokenExpired(accessToken, 120)) && refreshToken) {
 
     const refreshResponse = await refreshTokens(request)
@@ -136,7 +135,6 @@ export async function middleware(request: NextRequest) {
   const pathnameHasLocale = locales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   )
-  console.log(pathnameHasLocale)
   if (!pathnameHasLocale) {
     const locale = getLocale(request)
     const newUrl = new URL(`/${locale}${pathname}`, request.url)

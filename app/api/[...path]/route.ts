@@ -73,7 +73,6 @@ export async function POST(
     const data = await response.json();
 
     if (!response.ok) {
-      console.log(data)
       return NextResponse.json(
         { error: data.error },
         { status: response.status }
@@ -82,7 +81,6 @@ export async function POST(
 
     return NextResponse.json(data);
   } catch (error: any) {
-    console.log('error', error);
     console.error('API Error:', {
       message: error.message,
     });

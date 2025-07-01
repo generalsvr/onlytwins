@@ -29,7 +29,6 @@ export function LanguageProvider({
   // Функция для смены локали
   const setLocale = useCallback(
     async (newLocale: string) => {
-      console.log("newLocale", newLocale)
       if (!availableLocales.includes(newLocale)) {
         console.warn(`Locale ${newLocale} is not supported`);
         return;

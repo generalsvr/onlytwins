@@ -2,7 +2,14 @@ import CharacterChatTemplate from '@/components/chat/character-chat-template';
 import { getConversationsHistorySSR } from '@/lib/services/v1/server/utils/useServerConversationHistory';
 import { getAgentSSR } from '@/lib/services/v1/server/utils/useServerAgent';
 import { getConversationsSSR } from '@/lib/services/v1/server/utils/useServerConversations';
+import { Metadata } from 'next';
 
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Chat | OnlyTwins',
+    description: 'Chat'
+  };
+}
 export default async function CharacterChatPage({
   params,
 }: {

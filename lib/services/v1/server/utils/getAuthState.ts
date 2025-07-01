@@ -45,7 +45,6 @@ export default async function getAuthState(): Promise<AuthServerResponse> {
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error: Error) {
-    console.log(error)
     return {
       user: null,
       isAuthenticated: false,

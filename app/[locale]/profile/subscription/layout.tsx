@@ -6,7 +6,6 @@ import { Loader } from '@/components/ui/loader';
 async function SubscriptionContent() {
   const userSubscriptionTier = await getUserSubscriptionTier();
   const data = await getSubscriptionTiers();
-  console.log(userSubscriptionTier);
 
   return <SubscriptionSection tiers={data} userSubscriptionTier={userSubscriptionTier} />;
 }

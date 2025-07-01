@@ -276,7 +276,6 @@ export default function SubscriptionSection({
       </div>
     );
   }
-  console.log(selectedPlanData);
   const handlePayment = async () => {
     if (!selectedPlanData?.billingId) return;
     setIsProcessing(true);

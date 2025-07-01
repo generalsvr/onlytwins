@@ -305,7 +305,6 @@ export default function CharacterChatTemplate({
 
   // Обработка завершения записи
   function handleRecordingComplete(audioBlob: Blob, audioUrl: string) {
-    console.log('Recording completed:', { audioBlob, audioUrl });
 
     // Сохраняем URL записи для прослушивания
     setRecordedAudioUrl(audioUrl);
@@ -337,7 +336,6 @@ export default function CharacterChatTemplate({
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Audio sent successfully:', result);
 
         // Если сервер вернул транскрипцию, можно добавить её как текстовое сообщение
         if (result.transcription) {

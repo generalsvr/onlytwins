@@ -46,14 +46,12 @@ clientApi.interceptors.request.use(
 // Response interceptor: Transform keys and handle token refresh
 clientApi.interceptors.response.use(
   (response) => {
-    console.log('error')
     if (response.data) {
       response.data = humps.camelizeKeys(response.data);
     }
     return response;
   },
   async (error: AxiosError) => {
-    console.log("axios error: ",error)
     const originalRequest = error.config as CustomAxiosRequestConfig;
     if (
       error.response?.status === 401 &&
@@ -79,7 +77,6 @@ clientApi.interceptors.response.use(
             },
           }
         );
-        console.log(response)
         const {
           accessToken,
           refreshToken: newRefreshToken,

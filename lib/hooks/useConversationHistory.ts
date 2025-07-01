@@ -54,9 +54,7 @@ export const useConversationHistory = (
         LIMIT,
         offset
       );
-      console.log(offset)
-      console.log('history',history)
-      console.log("data",data)
+
       if (data && data.length > 0) {
 
 

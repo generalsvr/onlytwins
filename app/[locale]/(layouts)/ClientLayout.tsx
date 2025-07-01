@@ -58,8 +58,6 @@ export default function ClientLayout({
     const initializeAuth = async () => {
       setIsLoading(true);
       try {
-        console.log('call init auth');
-        console.log(initialAuthState);
         if (initialAuthState.user) {
           setUser(initialAuthState.user);
           return;

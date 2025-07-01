@@ -1,4 +1,4 @@
-import SafeImage from '@/components/safe-image';
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Pause,
@@ -24,11 +24,11 @@ interface MessageItemProps {
 }
 
 export default function MessageItem({
-                                      message,
-                                      character,
-                                      isMobile,
-                                      handlePurchaseContent,
-                                    }: MessageItemProps) {
+  message,
+  character,
+  isMobile,
+  handlePurchaseContent,
+}: MessageItemProps) {
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -109,6 +109,7 @@ export default function MessageItem({
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
+
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} group`}>
@@ -274,7 +275,7 @@ export default function MessageItem({
                   ) : (
                     // Обычный контент или уже купленный
                     <>
-                      {message.media.type?.includes('video') ? (
+                      {message.media.mimeType?.includes('video') ? (
                         <video
                           src={message.media.url}
                           className="w-full max-w-sm h-auto object-cover rounded-2xl"
@@ -290,11 +291,6 @@ export default function MessageItem({
                         />
                       )}
 
-                      {!imageLoaded && (
-                        <div className="absolute inset-0 bg-zinc-800 animate-pulse rounded-2xl flex items-center justify-center">
-                          <div className="w-8 h-8 border-2 border-zinc-600 border-t-pink-500 rounded-full animate-spin" />
-                        </div>
-                      )}
 
                       {/* Обычные действия для изображений */}
                       <AnimatePresence>

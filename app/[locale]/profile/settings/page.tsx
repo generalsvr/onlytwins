@@ -187,8 +187,6 @@ export default function SettingsPage() {
     // когда изменится theme из next-themes
   };
 
-  console.log("Current theme:", theme, "Resolved theme:", resolvedTheme, "Settings darkMode:", settings.darkMode);
-
   const settingSections = useMemo(
     () => [
       {
