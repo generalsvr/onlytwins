@@ -11,12 +11,10 @@ interface MessageListProps {
   isLoadingMore?: boolean;
   hasMore?: boolean;
   character: AgentResponse;
-  togglePlayPause: (messageId: number) => void;
-  playingStates: { [key: number]: boolean };
   messagesEndRef: RefObject<HTMLDivElement | null>;
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
   isMobile: boolean;
-  handlePurchaseContent: (content: PrivateContent) => void;
+  handlePurchaseContent: (content: PrivateContent, messageId: number) => void;
 }
 
 export default function MessageList({
@@ -25,12 +23,10 @@ export default function MessageList({
   isLoadingMore = false,
   hasMore = false,
   character,
-  togglePlayPause,
-  playingStates,
   messagesEndRef,
   onScroll,
   isMobile,
-  handlePurchaseContent
+  handlePurchaseContent,
 }: MessageListProps) {
   return (
     <div
@@ -127,8 +123,6 @@ export default function MessageList({
               <MessageItem
                 message={message}
                 character={character}
-                togglePlayPause={togglePlayPause}
-                playingStates={playingStates}
                 isMobile={isMobile}
                 handlePurchaseContent={handlePurchaseContent}
               />

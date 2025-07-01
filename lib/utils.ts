@@ -44,15 +44,15 @@ export const getTokens = (): Tokens => {
 // Function to set tokens in cookies
 export const setTokens = (tokens: { accessToken: string; refreshToken: string; expiresIn: number; refreshExpiresIn: number }) => {
   Cookies.set('access_token', tokens.accessToken, {
-    expires: new Date(Date.now() + tokens.expiresIn * 1000), // expiresIn in seconds
+    expires: new Date(Date.now() + tokens.expiresIn * 1000),
     secure: true,
-    sameSite: 'strict',
+    sameSite: 'lax' as const,
     path: '/',
   });
   Cookies.set('refresh_token', tokens.refreshToken, {
-    expires: new Date(Date.now() + tokens.refreshExpiresIn * 1000), // refreshExpiresIn in seconds
+    expires: new Date(Date.now() + tokens.refreshExpiresIn * 1000),
     secure: true,
-    sameSite: 'strict',
+    sameSite: 'lax' as const,
     path: '/',
   });
 };

@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import ProfilePage from '@/app/[locale]/profile/page';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

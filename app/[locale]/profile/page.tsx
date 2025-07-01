@@ -26,7 +26,7 @@ import { billingService } from '@/lib/services/v1/client/billing';
 
 
 export default function ProfilePage() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, getCurrentUser } = useAuthStore();
   const setLoading = useLoadingStore((state) => state.setLoading);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { isMobile } = useWindowSize();

@@ -18,12 +18,14 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useLoadingStore } from '@/lib/stores/useLoadingStore';
 import { useLocale } from '@/contexts/LanguageContext';
+import useWindowSize from '@/lib/hooks/useWindowSize';
 
 export default function ProfileInformationPage() {
   const router = useRouter();
   const { user, updateProfile, getCurrentUser } = useAuthStore();
   const setLoading = useLoadingStore((state) => state.setLoading);
   const { dictionary } = useLocale();
+  const { isMobile } = useWindowSize();
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -102,11 +104,10 @@ export default function ProfileInformationPage() {
       reader.readAsDataURL(file);
     }
   };
-
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-10">
+      <div className={`sticky top-0 z-10 ${isMobile && 'bg-zinc-900/60 backdrop-blur-xl border border-zinc-700/30 shadow-2xl'}`}>
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center">
             <button
@@ -115,7 +116,7 @@ export default function ProfileInformationPage() {
             >
               <ArrowLeft size={20} className="text-zinc-300" />
             </button>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-white to-zinc-300 bg-clip-text text-transparent">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-white to-zinc-300 bg-clip-text text-transparent bg-zinc-900/60 backdrop-blur-xl border border-zinc-700/30 shadow-2xl">
               {dictionary.profileInfo.profileInformation}
             </h1>
           </div>
@@ -235,7 +236,8 @@ export default function ProfileInformationPage() {
                   <Calendar size={16} />
                   <span>
                     {dictionary.profileInfo.memberSince}{' '}
-                    {`${user?.createdAt.split('-')[0]}.${user?.createdAt.split('-')[1]}` || 'January 2023'}
+                    {`${user?.createdAt.split('-')[0]}.${user?.createdAt.split('-')[1]}` ||
+                      'January 2023'}
                   </span>
                 </div>
               </div>

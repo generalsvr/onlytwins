@@ -1,5 +1,7 @@
 // app/api/auth/[...path]/route.ts
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { setCookie } from '@/app/actions/cookies';
 
 const EXTERNAL_API_URL = 'https://platform.onlytwins.ai/api/v1';
 
@@ -33,7 +35,7 @@ export async function GET(
     }
 
     return NextResponse.json(data);
-  } catch (error: Error) {
+  } catch (error: any) {
     console.error('Actual Request URL:', url);
     console.error('API Error:', {
       message: error.message,
@@ -69,45 +71,17 @@ export async function POST(
     });
 
     const data = await response.json();
-    const resp = NextResponse.json(data);
 
     if (!response.ok) {
+      console.log(data)
       return NextResponse.json(
         { error: data.error },
         { status: response.status }
       );
     }
 
-    // Если это запрос на обновление токенов через Server Action
-    if (path === 'auth/refresh' && isServerAction) {
-      try{
-        if (data['access_token']) {
-          resp.cookies.set('access_token', data['access_token'], {
-            httpOnly: false,
-            secure: false,
-            sameSite: 'strict',
-            maxAge: data['expires_in'],
-            path:'/'
-          });
-        }
-
-        if (data['refresh_token']) {
-          resp.cookies.set('refresh_token', data['refresh_token'], {
-            httpOnly: false,
-            secure: false,
-            sameSite: 'strict',
-            maxAge: data['refresh_expires_in'],
-            path:'/'
-          });
-        }
-      } catch(error){
-        console.log(error);
-      }
-
-    }
-
-    return resp;
-  } catch (error: Error) {
+    return NextResponse.json(data);
+  } catch (error: any) {
     console.log('error', error);
     console.error('API Error:', {
       message: error.message,
@@ -120,6 +94,7 @@ export async function POST(
   }
 }
 
+// Остальные методы остаются без изменений
 export async function PUT(
   request: Request,
   { params }: { params: { path: string[] } }
@@ -158,6 +133,7 @@ export async function PUT(
     return NextResponse.json(error);
   }
 }
+
 export async function DELETE(
   request: Request,
   { params }: { params: { path: string[] } }
@@ -196,6 +172,7 @@ export async function DELETE(
     return NextResponse.json(error);
   }
 }
+
 export async function PATCH(
   request: Request,
   { params }: { params: { path: string[] } }
@@ -205,7 +182,6 @@ export async function PATCH(
   const url = `${EXTERNAL_API_URL}/${path}`;
   const body = await request.json();
   const authToken = request.headers.get('Authorization');
-
 
   try {
     const response = await fetch(url, {
@@ -228,9 +204,7 @@ export async function PATCH(
     }
 
     return NextResponse.json(data);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-  } catch (error: Error) {
+  } catch (error: any) {
     console.error('API Error:', {
       message: error.message,
     });

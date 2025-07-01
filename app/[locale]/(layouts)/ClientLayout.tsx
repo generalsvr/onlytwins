@@ -6,7 +6,7 @@ import '../../globals.css';
 import { useAuthStore } from '@/lib/stores/authStore';
 import A11ySkipLink from '@/components/a11y-skip-link';
 import Header from '@/components/header';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import MainNavigation from '@/components/main-navigation';
 import AuthModal from '@/components/auth/auth-modal';
 import { useModalStore } from '@/lib/stores/modalStore';
@@ -21,6 +21,9 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { UserResponse } from '@/lib/types/auth';
 import SuccessPayment from '@/components/modals/success-payment';
 import { useLocale } from '@/contexts/LanguageContext';
+import SuccessSubscription from '@/components/modals/success-subscription';
+import SuccessTokens from '@/components/modals/success-tokens';
+import { useLoadingStore } from '@/lib/stores/useLoadingStore';
 
 interface InitialAuthState {
   user: UserResponse;
@@ -46,13 +49,17 @@ export default function ClientLayout({
   const { isMobile } = useWindowSize();
   const [signUpPopupShow, setSignUpPopupShow] = useState(true);
   const { setToastNotification } = useNotificationStore();
-  const { dictionary } = useLocale()
+  const isLoading = useLoadingStore((state) => state.isLoading);
+  const { dictionary } = useLocale();
+  const router = useRouter();
   const isChatPage = pathname && pathname.includes('/chat/');
 
   useEffect(() => {
     const initializeAuth = async () => {
       setIsLoading(true);
       try {
+        console.log('call init auth');
+        console.log(initialAuthState);
         if (initialAuthState.user) {
           setUser(initialAuthState.user);
           return;
@@ -82,16 +89,27 @@ export default function ClientLayout({
     initializeAuth();
   }, [initialAuthState, setUser, getCurrentUser, setIsLoading]);
 
-  // Обработка параметров платежа
   useEffect(() => {
     const paymentStatus = searchParams.get('payment_status');
+    const type = searchParams.get('type');
 
-    if (paymentStatus === 'success') {
+    if (paymentStatus === 'success' && type === 'subscription') {
+      const plan = searchParams.get('plan');
       openModal({
         type: 'message',
-        content: <SuccessPayment />,
+        content: <SuccessSubscription plan={plan} />,
       });
-    } else if (paymentStatus === 'failed') {
+    }
+
+    if (paymentStatus === 'success' && type === 'tokens') {
+      const amount = searchParams.get('amount');
+      openModal({
+        type: 'message',
+        content: <SuccessTokens amount={amount} />,
+      });
+    }
+
+    if (paymentStatus === 'failed') {
       openModal({
         type: 'message',
         content: <FailedPayment />,
@@ -102,74 +120,74 @@ export default function ClientLayout({
   }, [searchParams, setToastNotification, openModal]);
 
   return (
-      <AuthProvider>
+    <AuthProvider>
+      <div
+        className={
+          isChatPage
+            ? 'mx-auto max-w-[1440px]'
+            : isMobile
+              ? `w-full h-full ${pathname.includes('chat/') && 'overflow-hidden'}`
+              : 'mx-auto max-w-[1440px] pt-6 px-4'
+        }
+      >
+        <A11ySkipLink />
+        {!isChatPage && <Header />}
+        {isLoading && <Loader />}
+
         <div
           className={
             isChatPage
-              ? 'mx-auto max-w-[1440px]'
+              ? ''
               : isMobile
-                ? `w-full h-full ${pathname.includes('chat/') && 'overflow-hidden'}`
-                : 'mx-auto max-w-[1440px] pt-6 px-4'
+                ? `pt-2 ${!pathname.includes('chat') && 'pb-20'}`
+                : 'pt-12'
           }
         >
-          <A11ySkipLink />
-          {!isChatPage && <Header />}
-
-          <Loader />
-          <div
-            className={
-              isChatPage
-                ? ''
-                : isMobile
-                  ? `pt-2 ${!pathname.includes('chat') && 'pb-20'}`
-                  : 'pt-12'
-            }
-          >
-            {children}
-          </div>
-          {isMobile && isChatPage ? <></> : <MainNavigation />}
-
-          {!isAuthenticated && signUpPopupShow && (
-            <div
-              className={`fixed ${
-                isMobile ? 'bottom-16' : 'bottom-6 right-6 max-w-[550px]'
-              } left-0 right-0 bg-gradient-to-r from-pink-500 to-purple-500 flex items-center z-50 ${
-                isMobile ? '' : 'rounded-xl mx-auto shadow-2xl'
-              } transition-all duration-300 hover:scale-[1.02]`}
-            >
-              <div className="relative flex items-center justify-between w-full p-5 px-8">
-                <X
-                  className="absolute top-2 right-2 w-5 h-5 text-white/80 hover:text-white cursor-pointer transition-colors"
-                  onClick={() => setSignUpPopupShow(false)}
-                />
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0">
-                    <Star />
-                  </div>
-                  <p className="text-white text-sm md:text-base font-medium leading-tight">
-                    {dictionary.auth.signup.signUpDescription}
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    openModal({
-                      type: 'message',
-                      content: (
-                        <AuthModal
-                          initialMode="signup"
-                          onClose={() => closeModal()}
-                        />
-                      ),
-                    })
-                  }
-                  className="bg-white text-pink-500 px-4 py-2 rounded-full text-sm md:text-base font-semibold hover:bg-pink-100 transition-colors duration-200 shadow-md whitespace-nowrap"
-                >
-                  {dictionary.auth.signup.signUp}
-                </button>
-              </div>
-            </div>
-          )}
+          {children}
         </div>
-      </AuthProvider>
+        {isMobile && isChatPage ? <></> : <MainNavigation />}
+
+        {!isAuthenticated && signUpPopupShow && (
+          <div
+            className={`fixed ${
+              isMobile ? 'bottom-16' : 'bottom-6 right-6 max-w-[550px]'
+            } left-0 right-0 bg-gradient-to-r from-pink-500 to-purple-500 flex items-center z-50 ${
+              isMobile ? '' : 'rounded-xl mx-auto shadow-2xl'
+            } transition-all duration-300 hover:scale-[1.02]`}
+          >
+            <div className="relative flex items-center justify-between w-full p-5 px-8">
+              <X
+                className="absolute top-2 right-2 w-5 h-5 text-white/80 hover:text-white cursor-pointer transition-colors"
+                onClick={() => setSignUpPopupShow(false)}
+              />
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  <Star />
+                </div>
+                <p className="text-white text-sm md:text-base font-medium leading-tight">
+                  {dictionary.auth.signup.signUpDescription}
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  openModal({
+                    type: 'message',
+                    content: (
+                      <AuthModal
+                        initialMode="signup"
+                        onClose={() => closeModal()}
+                      />
+                    ),
+                  })
+                }
+                className="bg-white text-pink-500 px-4 py-2 rounded-full text-sm md:text-base font-semibold hover:bg-pink-100 transition-colors duration-200 shadow-md whitespace-nowrap"
+              >
+                {dictionary.auth.signup.signUp}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </AuthProvider>
   );
 }

@@ -40,10 +40,6 @@ export default function SuccessPayment() {
             className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-3 px-6 rounded-xl transition-all">
             Continue
           </button>
-          {/*<button*/}
-          {/*  className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium py-3 px-6 rounded-xl border border-zinc-700 transition-colors">*/}
-          {/*  Download Receipt*/}
-          {/*</button>*/}
         </div>
       </div>
     );

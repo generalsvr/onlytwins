@@ -16,6 +16,7 @@ import { useLoadingStore } from '@/lib/stores/useLoadingStore';
 import { useLocale } from '@/contexts/LanguageContext';
 import { VERSION } from '@/lib/consts';
 import { useTheme } from 'next-themes';
+import useWindowSize from '@/lib/hooks/useWindowSize';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function SettingsPage() {
   const setLoading = useLoadingStore((state) => state.setLoading);
   const { setLocale, dictionary, locale } = useLocale();
   const { setTheme, theme, resolvedTheme } = useTheme();
-
+  const { isMobile } = useWindowSize();
   // Получаем текущую локаль из URL параметров
   const currentLocale = params?.locale as string;
 
@@ -316,7 +317,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-10">
+      <div className={`sticky top-0 z-10 ${isMobile && 'bg-zinc-900/60 backdrop-blur-xl border border-zinc-700/30 shadow-2xl'}`}>
         <div className="flex items-center p-4">
           <button
             onClick={handleBack}

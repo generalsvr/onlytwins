@@ -1,16 +1,32 @@
 import { billingService } from '@/lib/services/v1/client/billing';
-import { SubscriptionResponse } from '@/lib/types/billing';
+import {
+  GlobalSubscription,
+  SubscriptionResponse,
+  UserSubscriptionResponse,
+} from '@/lib/types/billing';
+import { useEffect, useState } from 'react';
 
 interface UseSubscriptionResponse {
-  getTiers: () => Promise<SubscriptionResponse>;
+  userTier: GlobalSubscription | null
+  isLoading: boolean
 }
 
 export const useSubscription = (): UseSubscriptionResponse => {
-  const getTiers = async () => {
-    return await billingService.getSubscriptionTier();
+  const [userTier, setUserTier] = useState<GlobalSubscription | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const getUserTier = async () => {
+    const data = await billingService.getUserSubscriptionTier();
+    if (data) {
+      setUserTier(data.globalSubscription);
+    }
+    setIsLoading(false);
   };
+  useEffect(() => {
+    getUserTier();
+  }, []);
 
   return {
-    getTiers
+    userTier,
+    isLoading
   };
 };

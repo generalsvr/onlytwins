@@ -39,7 +39,7 @@ interface NavItem {
 }
 
 export default function MainNavigation() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuthStore(state => state);
   const { isMobile } = useWindowSize();
   const { closeModal, openModal } = useModalStore((state) => state);
   const { dictionary, locale } = useLocale();

@@ -6,7 +6,7 @@ import {
   CancelSubscriptionRequest,
   SessionResponse,
   SubscriptionResponse,
-  WebhookResponse,
+  WebhookResponse, UserSubscriptionResponse,
 } from '@/lib/types/billing';
 import { AxiosError } from 'axios';
 
@@ -43,8 +43,8 @@ export const billingService = {
     );
     return response.data;
   },
-  async getUserSubscriptionTier(): Promise<SubscriptionResponse> {
-    const response = await clientApi.get<SubscriptionResponse>(
+  async getUserSubscriptionTier(): Promise<UserSubscriptionResponse> {
+    const response = await clientApi.get<UserSubscriptionResponse>(
       '/billing/subscriptions/my'
     );
     return response.data;

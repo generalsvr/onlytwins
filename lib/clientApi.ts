@@ -3,7 +3,7 @@ import humps from 'humps';
 import { CustomAxiosRequestConfig } from '@/lib/types/axios';
 import { getTokens, clearTokens, setTokens } from '@/lib/utils';
 import { TokenResponse } from '@/lib/types/auth';
-import handleApiError from '@/lib/errorHandler';
+
 
 const clientApi: AxiosInstance = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_HOST_URL}/api`,
@@ -46,12 +46,14 @@ clientApi.interceptors.request.use(
 // Response interceptor: Transform keys and handle token refresh
 clientApi.interceptors.response.use(
   (response) => {
+    console.log('error')
     if (response.data) {
       response.data = humps.camelizeKeys(response.data);
     }
     return response;
   },
   async (error: AxiosError) => {
+    console.log("axios error: ",error)
     const originalRequest = error.config as CustomAxiosRequestConfig;
     if (
       error.response?.status === 401 &&
@@ -69,7 +71,7 @@ clientApi.interceptors.response.use(
         }
         // Request new tokens using refresh token
         const response = await clientApi.post<TokenResponse>(
-          '/api/auth/refresh',
+          '/auth/refresh',
           {},
           {
             headers: {
@@ -77,12 +79,14 @@ clientApi.interceptors.response.use(
             },
           }
         );
+        console.log(response)
         const {
           accessToken,
           refreshToken: newRefreshToken,
           expiresIn,
           refreshExpiresIn,
         } = response.data;
+
         setTokens({
           accessToken,
           refreshToken: newRefreshToken,

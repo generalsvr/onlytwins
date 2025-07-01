@@ -2,9 +2,6 @@ import { useLoadingStore } from '@/lib/stores/useLoadingStore';
 import React from 'react';
 
 export const Loader: React.FC = () => {
-  const isLoading = useLoadingStore((state) => state.isLoading);
-
-  if (!isLoading) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md transition-all duration-300">

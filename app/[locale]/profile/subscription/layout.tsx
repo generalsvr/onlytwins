@@ -1,21 +1,24 @@
-'use server';
-import { Metadata } from 'next';
-import { getCurrentUser } from '@/lib/services/v1/server/auth';
+import { Suspense } from 'react';
 import SubscriptionSection from '@/app/[locale]/profile/subscription/page';
 import { getSubscriptionTiers, getUserSubscriptionTier } from '@/lib/services/v1/server/billing';
+import { Loader } from '@/components/ui/loader';
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'Subscription | OnlyTwins',
-    description: 'Your profile',
-  };
+async function SubscriptionContent() {
+  const userSubscriptionTier = await getUserSubscriptionTier();
+  const data = await getSubscriptionTiers();
+  console.log(userSubscriptionTier);
+
+  return <SubscriptionSection tiers={data} userSubscriptionTier={userSubscriptionTier} />;
 }
 
-export default async function SubscriptionLayout({}: {
+export default function SubscriptionLayout({}: {
   children: React.ReactNode;
 }) {
-  const userSubscriptionTier = await getUserSubscriptionTier()
-  const data = await getSubscriptionTiers();
-  console.log(userSubscriptionTier)
-  return <SubscriptionSection tiers={data} userSubscriptionTier={userSubscriptionTier} />;
+  return (
+    <Suspense fallback={
+     <Loader/>
+    }>
+      <SubscriptionContent />
+    </Suspense>
+  );
 }

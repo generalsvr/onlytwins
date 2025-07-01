@@ -25,9 +25,9 @@ export interface ChatMessage {
 
 export interface Message {
   id: string;
-  text: string;
+  text?: string;
   sender: 'user' | 'agent';
-  audio?: boolean;
+  audio?: string;
   time: string;
   media?: PrivateContent;
 }

@@ -15,6 +15,9 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useLocale } from '@/contexts/LanguageContext';
 import { useModalStore } from '@/lib/stores/modalStore';
+import { getUserSubscriptionTier } from '@/lib/services/v1/server/billing';
+import { useSubscription } from '@/lib/hooks/useSubscription';
+import { Loader } from '@/components/ui/loader';
 
 interface TokenPackage {
   id: number;
@@ -34,6 +37,7 @@ type PaymentMethod = 'card' | 'paypal' | 'crypto' | 'empty';
 export default function TokensModal() {
   const router = useRouter();
   const { locale } = useLocale();
+  // const { userTier, isLoading } = useSubscription();
   const user = useAuthStore((state) => state.user);
   const [selectedPackage, setSelectedPackage] = useState<TokenPackage>();
   const [currentStep, setCurrentStep] = useState<'selection' | 'payment'>(
@@ -134,7 +138,8 @@ export default function TokensModal() {
       'Tokens',
       user?.email || '',
       user?.firstName || '',
-      selectedPackage.price
+      selectedPackage.price,
+      selectedPackage.effectiveTokens
     ).then((res) => {
       router.push(res.url);
     });
@@ -174,11 +179,16 @@ export default function TokensModal() {
       opacity: 0,
     }),
   };
-
+  // if (isLoading) {
+  //   return <Loader />;
+  // }
+  //
+  // if (!userTier) {
+  //   return <p>Please buy subscription then buy tokens</p>;
+  // }
   return (
-    <div className="bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl overflow-hidden">
+    <div className="bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl w-full h-full ">
       <AnimatePresence mode="wait" custom={currentStep === 'payment' ? 1 : -1}>
-
         {currentStep === 'selection' ? (
           <motion.div
             key="selection"
@@ -193,7 +203,6 @@ export default function TokensModal() {
             }}
             className="grid gap-4 p-4 md:grid-cols-2 lg:grid-cols-3"
           >
-
             {tokenPackages.map((pkg, index) => (
               <motion.button
                 key={pkg.id}
@@ -201,7 +210,7 @@ export default function TokensModal() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => handlePackageSelect(pkg)}
-                className={`relative p-6 rounded-2xl border transition-all duration-300 text-left group ${
+                className={`min-w-[100%] relative p-6 rounded-2xl border transition-all duration-300 text-left group ${
                   selectedPackage?.id === pkg.id
                     ? 'border-pink-500 bg-gradient-to-br from-pink-500/10 to-purple-500/10 shadow-lg shadow-pink-500/20'
                     : 'border-zinc-800/50 bg-zinc-900/50 hover:border-zinc-700/50 hover:bg-zinc-800/50'
@@ -212,8 +221,7 @@ export default function TokensModal() {
                 {/* Popular Badge */}
                 {pkg.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <div
-                      className="flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold shadow-lg">
+                    <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold shadow-lg">
                       <Star className="w-3 h-3" />
                       MOST POPULAR
                     </div>
@@ -244,8 +252,7 @@ export default function TokensModal() {
                   </div>
 
                   {pkg.discount && pkg.discount !== '0%' && (
-                    <div
-                      className="inline-block px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 mb-2">
+                    <div className="inline-block px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 mb-2">
                       <span className="text-xs font-bold text-green-300">
                         Save {pkg.discount}
                       </span>
@@ -303,9 +310,7 @@ export default function TokensModal() {
               >
                 <ArrowLeft size={20} className="text-zinc-300" />
               </motion.button>
-              <h2 className="text-2xl font-bold text-white">
-                Complete Purchase
-              </h2>
+              <h2 className="text-2xl font-bold text-white">Purchase</h2>
             </div>
 
             <div className="grid lg:grid-cols-2 gap-6">
@@ -357,15 +362,15 @@ export default function TokensModal() {
                       </div>
                       {selectedPackage.effectiveTokens >
                         selectedPackage.baseTokens && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-zinc-400">Bonus tokens:</span>
-                            <span className="text-green-400">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-zinc-400">Bonus tokens:</span>
+                          <span className="text-green-400">
                             +
-                              {selectedPackage.effectiveTokens -
-                                selectedPackage.baseTokens}
+                            {selectedPackage.effectiveTokens -
+                              selectedPackage.baseTokens}
                           </span>
-                          </div>
-                        )}
+                        </div>
+                      )}
                       <div className="flex justify-between text-sm">
                         <span className="text-zinc-400">Cost per token:</span>
                         <span className="text-white">

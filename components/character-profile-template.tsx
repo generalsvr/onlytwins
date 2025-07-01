@@ -281,11 +281,11 @@ export default function CharacterProfileTemplate({
             if (item.id === content.id) {
               return {
                 ...item,
-                purchased:true,
-                url: newUrl
+                purchased: true,
+                url: newUrl,
               };
             }
-            return item
+            return item;
           });
         setCurrentCharacter({
           ...currentCharacter,
@@ -600,19 +600,27 @@ export default function CharacterProfileTemplate({
                             className="relative rounded-xl overflow-hidden group cursor-pointer"
                           >
                             <div className="aspect-square">
-                              <img
-                                src={content.url}
-                                alt={`Premium content ${content.id}`}
-                                className="w-full h-full object-cover"
-                                width={isMobile ? 150 : 300}
-                                height={isMobile ? 150 : 300}
-                                onClick={() =>
-                                  handleImageClick(
-                                    content.url,
-                                    `${currentCharacter.name}'s profile`
-                                  )
-                                }
-                              />
+                              {content.mimeType.includes('video') ? (
+                                <video
+                                  src={content.url}
+                                  className="w-full h-full object-cover"
+                                  controls={true}
+                                />
+                              ) : (
+                                <img
+                                  src={content.url}
+                                  alt={`Premium content ${content.id}`}
+                                  className="w-full h-full object-cover"
+                                  width={isMobile ? 150 : 300}
+                                  height={isMobile ? 150 : 300}
+                                  onClick={() =>
+                                    handleImageClick(
+                                      content.url,
+                                      `${currentCharacter.name}'s profile`
+                                    )
+                                  }
+                                />
+                              )}
                             </div>
                           </div>
                         );

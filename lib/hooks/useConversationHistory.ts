@@ -54,7 +54,12 @@ export const useConversationHistory = (
         LIMIT,
         offset
       );
+      console.log(offset)
+      console.log('history',history)
+      console.log("data",data)
       if (data && data.length > 0) {
+
+
         const merge = [...data.reverse(), ...history]
         setHistory(merge);
         setOffset((prev) => prev + data.length);

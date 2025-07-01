@@ -18,6 +18,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
+import useWindowSize from '@/lib/hooks/useWindowSize';
 
 interface AffiliateSectionProps {
   onBack: () => void;
@@ -27,69 +28,7 @@ export default function AffiliateSection({ onBack }: AffiliateSectionProps) {
   const [copied, setCopied] = useState(false);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-
-  // Sample referral code
-  const referralCode = 'TWIN123';
-
-  // Sample referral stats
-  const stats = [
-    {
-      label: 'Total Referrals',
-      value: '12',
-      icon: Users,
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/10',
-      border: 'border-blue-500/20',
-    },
-    {
-      label: 'Active Users',
-      value: '8',
-      icon: TrendingUp,
-      color: 'text-green-400',
-      bg: 'bg-green-500/10',
-      border: 'border-green-500/20',
-    },
-    {
-      label: 'Total Earnings',
-      value: '1,250',
-      icon: Star,
-      color: 'text-yellow-400',
-      bg: 'bg-yellow-500/10',
-      border: 'border-yellow-500/20',
-    },
-  ];
-
-  // Sample referral history
-  const referrals = [
-    {
-      id: 1,
-      name: 'John D.',
-      date: '2023-05-15',
-      status: 'active',
-      earnings: 150,
-    },
-    {
-      id: 2,
-      name: 'Sarah M.',
-      date: '2023-05-10',
-      status: 'active',
-      earnings: 200,
-    },
-    {
-      id: 3,
-      name: 'Alex K.',
-      date: '2023-05-08',
-      status: 'inactive',
-      earnings: 50,
-    },
-    {
-      id: 4,
-      name: 'Emma R.',
-      date: '2023-05-05',
-      status: 'active',
-      earnings: 300,
-    },
-  ];
+  const { isMobile } = useWindowSize();
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(`mytwins_${user?.id}`);
@@ -104,7 +43,9 @@ export default function AffiliateSection({ onBack }: AffiliateSectionProps) {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-10">
+      <div
+        className={`sticky top-0 z-10 ${isMobile && 'bg-zinc-900/60 backdrop-blur-xl border border-zinc-700/30 shadow-2xl'}`}
+      >
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center">
             <button
@@ -158,9 +99,7 @@ export default function AffiliateSection({ onBack }: AffiliateSectionProps) {
                 <h3 className="text-xl font-bold text-white">
                   Your Referral Code
                 </h3>
-                <p className="text-white/80 text-sm">
-                  Share and earn tokens
-                </p>
+                <p className="text-white/80 text-sm">Share and earn tokens</p>
               </div>
             </div>
 

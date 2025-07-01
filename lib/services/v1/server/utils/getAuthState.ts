@@ -1,5 +1,4 @@
 import { cookies } from 'next/headers';
-import { authServerService } from '@/lib/ssr/auth-ssr';
 import { UserResponse } from '@/lib/types/auth';
 import { getCurrentUser } from '@/lib/services/v1/server/auth';
 
@@ -35,9 +34,7 @@ export default async function getAuthState(): Promise<AuthServerResponse> {
         needsRefresh: true
       };
     }
-
     const user = await getCurrentUser();
-
     return {
       user,
       isAuthenticated: true,

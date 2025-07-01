@@ -10,7 +10,21 @@ import ErrorBoundary from '@/app/[locale]/(providers)/ErrorBoundary';
 import getAuthState from '@/lib/services/v1/server/utils/getAuthState';
 import { getDictionary } from '@/dictionaries';
 import { Metadata } from 'next';
+import Head from 'next/head';
+/*
+              ,@@@@@@@,
+      ,,,.   ,@@@@@@/@@,  .oo8888o.
+   ,&%%&%&&%,@@@@@/@@@@@@,8888\88/8o
+  ,%&\%&&%&&%,@@@\@@@/@@@88\88888/88'
+  %&&%&%&/%&&%@@\@@/ /@@@88888\88888'
+  %&&%/ %&%%&&@@\ V /@@' `88\8 `/88'
+  `&%\ ` /%&'    |.|        \ '|8'
+      |o|        | |         | |
+      |.|        | |         | |
+   \\/ ._\//_/__/  ,\_//__\\/.  \_//__/_
 
+    🍃 by jun6 🍃
+*/
 const inter = Inter({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700', '800'],
@@ -33,6 +47,11 @@ export default async function RootLayout({
   const dict = await getDictionary(locale as 'en' | 'ru' | 'zh');
   return (
     <html lang="en">
+    <Head>
+      <title>OnlyTwins</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="color-scheme" content="only dark"/>
+    </Head>
       <body className={`${inter.className} hide-scrollbar`}>
         <A11ySkipLink />
         <ErrorBoundary>

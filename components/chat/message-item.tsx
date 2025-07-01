@@ -1,5 +1,5 @@
 import SafeImage from '@/components/safe-image';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Pause,
   Play,
@@ -8,6 +8,8 @@ import {
   Check,
   Lock,
   CreditCard,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { Message } from '@/lib/types/chat';
 import { AgentResponse, PrivateContent } from '@/lib/types/agents';
@@ -17,31 +19,53 @@ import { formatDate } from '@/lib/utils';
 interface MessageItemProps {
   message: Message;
   character: AgentResponse;
-  togglePlayPause: (messageId: number) => void;
-  playingStates: { [key: number]: boolean };
   isMobile: boolean;
-  onPurchaseMedia?: (messageId: number, price: number) => void;
-  handlePurchaseContent: (content: PrivateContent, messageId: number) => void
+  handlePurchaseContent: (content: PrivateContent, messageId: number) => void;
 }
 
 export default function MessageItem({
-  message,
-  character,
-  togglePlayPause,
-  playingStates,
-  isMobile,
-  onPurchaseMedia,
-  handlePurchaseContent
-}: MessageItemProps) {
+                                      message,
+                                      character,
+                                      isMobile,
+                                      handlePurchaseContent,
+                                    }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
+  // Аудио состояния
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
   const isUser = message.sender === 'user';
   const isAgent = message.sender === 'agent';
   const isPaidMedia = message.media?.price && message.media.price > 0;
   const isMediaPurchased = message.media?.purchased || false;
+  const isAudio = message.audio;
+
+  // Аудио эффекты
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateTime = () => setCurrentTime(audio.currentTime);
+    const updateDuration = () => setDuration(audio.duration);
+    const handleEnded = () => setIsPlaying(false);
+
+    audio.addEventListener('timeupdate', updateTime);
+    audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', updateTime);
+      audio.removeEventListener('loadedmetadata', updateDuration);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [message.audio]);
 
   const copyToClipboard = async () => {
     if (message.text) {
@@ -49,6 +73,41 @@ export default function MessageItem({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const toggleAudioPlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const toggleMute = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.muted = !audio.muted;
+    setIsMuted(audio.muted);
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const newTime = (parseFloat(e.target.value) / 100) * duration;
+    audio.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -124,6 +183,16 @@ export default function MessageItem({
               </div>
             )}
 
+            {/* Audio message */}
+            {isAudio && (
+              <audio
+                controls
+                src={message.audio}
+                className="w-full"
+                style={{ height: '32px' }}
+              />
+            )}
+
             {/* Image/Video message */}
             {message.media && (
               <motion.div
@@ -145,7 +214,7 @@ export default function MessageItem({
                   {/* Платный контент - размытое превью */}
                   {isPaidMedia && !isMediaPurchased ? (
                     <div className="relative">
-                      {message.media.type?.includes('video') ? (
+                      {message.media.mimeType?.includes('video') ? (
                         <video
                           src={message.media.url}
                           className="w-full max-w-sm h-auto object-cover rounded-2xl blur-lg"
@@ -183,7 +252,9 @@ export default function MessageItem({
                             className="flex items-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-full text-white font-medium transition-all duration-200"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => handlePurchaseContent(message.media!, message.id)}
+                            onClick={() =>
+                              handlePurchaseContent(message.media!, message.id)
+                            }
                           >
                             {isPurchasing ? (
                               <>
@@ -258,39 +329,6 @@ export default function MessageItem({
                   )}
                 </div>
               </motion.div>
-            )}
-
-            {/* Audio message */}
-            {message.audio && (
-              <div
-                className={`
-                  rounded-2xl overflow-hidden shadow-lg
-                  ${isUser ? 'rounded-br-md' : 'rounded-bl-md'}
-                `}
-              >
-                <div className="bg-gradient-to-r from-zinc-800 to-zinc-700 p-4 flex items-center space-x-3">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => togglePlayPause(message.id)}
-                    className="p-2 bg-pink-500 hover:bg-pink-600 rounded-full transition-colors"
-                  >
-                    {playingStates[message.id] ? (
-                      <Pause size={16} className="text-white" />
-                    ) : (
-                      <Play size={16} className="text-white ml-0.5" />
-                    )}
-                  </motion.button>
-                  <div className="flex-1">
-                    <div id={`waveform-${message.id}`} className="w-full h-8" />
-                  </div>
-                  <audio
-                    id={`audio-${message.id}`}
-                    src={message.audio}
-                    className="hidden"
-                  />
-                </div>
-              </div>
             )}
           </motion.div>
 

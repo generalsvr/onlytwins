@@ -30,6 +30,7 @@ import { useErrorHandler } from '@/lib/hooks/useErrorHandler';
 import { AxiosError } from 'axios';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import { useLoadingStore } from '@/lib/stores/useLoadingStore';
+import CancelSubscription from '@/components/modals/cancel-subscription';
 
 interface SubscriptionSectionProps {
   tiers: SubscriptionResponse | undefined;
@@ -275,12 +276,15 @@ export default function SubscriptionSection({
       </div>
     );
   }
-
+  console.log(selectedPlanData);
   const handlePayment = async () => {
     if (!selectedPlanData?.billingId) return;
     setIsProcessing(true);
 
-    await purchaseSubscription(selectedPlanData.billingId)
+    await purchaseSubscription(
+      selectedPlanData.billingId,
+      selectedPlanData.billingCycle
+    )
       .then((res) => {
         if (res.error) {
           errorHandler(res.error as AxiosError);
@@ -292,16 +296,28 @@ export default function SubscriptionSection({
   };
 
   const handleCancelSubscription = async () => {
-    setLoading(true);
-    await cancelSubscription(currentSubscription?.stripeSubscriptionId)
-      .then((res) => {
-        if (res.error) {
-          errorHandler(res.error as AxiosError);
-          return;
-        }
-        window.location.reload();
-      })
-      .finally(() => setLoading(false));
+    openModal({
+      type: 'message',
+      content: (
+        <CancelSubscription
+          onConfirm={async (atPeriod: boolean) => {
+            setLoading(true);
+            await cancelSubscription(
+              currentSubscription?.stripeSubscriptionId,
+              atPeriod
+            )
+              .then((res) => {
+                if (res.error) {
+                  errorHandler(res.error as AxiosError);
+                  return;
+                }
+                window.location.reload();
+              })
+              .finally(() => setLoading(false));
+          }}
+        />
+      ),
+    });
   };
 
   const currentPlanConfig = getCurrentPlanConfig();
@@ -309,7 +325,7 @@ export default function SubscriptionSection({
   return (
     <div className="min-h-screen">
       {/* Back Button Header */}
-      <div className="sticky top-0 z-10">
+      <div className={`sticky top-0 z-10 ${isMobile && 'bg-zinc-900/60 backdrop-blur-xl border border-zinc-700/30 shadow-2xl'}`}>
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center">
             <button
@@ -333,7 +349,7 @@ export default function SubscriptionSection({
               <div
                 className={`flex items-start justify-between ${isMobile && 'flex-col'}`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-start gap-4">
                   <div
                     className={`w-12 h-12 rounded-xl bg-gradient-to-br ${currentPlanConfig.gradientFrom} ${currentPlanConfig.gradientTo} flex items-center justify-center border border-${currentPlanConfig.color}-500/30`}
                   >
@@ -385,7 +401,7 @@ export default function SubscriptionSection({
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-3">
+                <div className={`flex gap-3 ${isMobile && 'mt-4 ml-auto'}`}>
                   <button
                     onClick={handleCancelSubscription}
                     className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 rounded-lg transition-colors duration-200 text-sm font-medium"

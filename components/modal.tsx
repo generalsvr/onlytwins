@@ -28,9 +28,7 @@ export default function Modal() {
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (event) => {
-      ('123');
       if (modelRef.current && !modelRef.current.contains(event.target)) {
-        ('343');
         closeModal(); // Закрытие модалки
       }
     };
@@ -43,15 +41,20 @@ export default function Modal() {
   // bg-zinc-800/60 backdrop-blur-xl rounded-2xl border border-zinc-700/30 shadow-2xl
   return createPortal(
     <div className="fixed w-screen h-screen inset-0 z-50 flex items-center justify-center bg-black/50 ">
-      <div ref={modelRef} className={`relative ${isMobile ? 'w-full h-full' : 'min-w-[320px]'} `}>
-        <button
-          onClick={closeModal}
-          className="absolute z-20 top-3 right-3 p-2 rounded-xl bg-zinc-800/50 hover:bg-zinc-700/50 transition-all duration-300 backdrop-blur-sm border border-zinc-700/50"
-        >
-        <X size={24} />
-        </button>
-        <div className={"overflow-auto h-full w-full max-h-screen"}>
-          {content}
+      <div ref={modelRef} className={`relative ${isMobile ? 'w-full h-full flex justify-center items-center' : 'min-w-[320px]'} `}>
+
+        <div className={"relative overflow-auto max-h-full w-full  p-4"}>
+
+          <div className={'relative max-w-full max-h-full '}>
+            <button
+              onClick={closeModal}
+              className="absolute z-20 top-5 right-3 p-2 rounded-xl bg-zinc-800/50 hover:bg-zinc-700/50 transition-all duration-300 backdrop-blur-sm border border-zinc-700/50"
+            >
+              <X size={24} />
+            </button>
+            {content}
+          </div>
+
         </div>
 
       </div>
