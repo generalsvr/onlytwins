@@ -106,18 +106,18 @@ export async function middleware(request: NextRequest) {
       console.log(response)
       const newUrl = new URL(`/${defaultLocale}`, request.url)
       const nextResponse = NextResponse.redirect(newUrl)
-      if(response?.tokens){
-        const accessTokenExpires = new Date(Date.now() + response.tokens.expires_in * 1000)
-        const refreshTokenExpires = new Date(Date.now() + response.tokens.refresh_expires_in * 1000)
+      if(response?.token){
+        const accessTokenExpires = new Date(Date.now() + response.token.expires_in * 1000)
+        const refreshTokenExpires = new Date(Date.now() + response.token.refresh_expires_in * 1000)
 
-        nextResponse.cookies.set('access_token', response.tokens.access_token, {
+        nextResponse.cookies.set('access_token', response.token.access_token, {
           expires: accessTokenExpires,
           httpOnly: false,
           secure: false,
           sameSite: 'lax',
         })
 
-        nextResponse.cookies.set('refresh_token', response.tokens.refresh_token, {
+        nextResponse.cookies.set('refresh_token', response.token.refresh_token, {
           expires: refreshTokenExpires,
           httpOnly: false,
           secure: false,
