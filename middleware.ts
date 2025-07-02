@@ -88,7 +88,52 @@ function isTokenExpired(token: string, bufferSeconds: number = 60): boolean {
   }
 }
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
+  if (pathname === '/auth/google/callback') {
+    const queryParams = Object.fromEntries(searchParams.entries())
+    if(queryParams?.state && queryParams?.code){
+      console.log(queryParams.state, queryParams.code)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_HOST_URL}/api/auth/google/exchange`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body:JSON.stringify({
+          "code": queryParams.code,
+          "state": queryParams.state
+        }),
+      }).then(res => res.json())
+      console.log(response)
+      const newUrl = new URL(`/${defaultLocale}`, request.url)
+      const nextResponse = NextResponse.redirect(newUrl)
+      if(response?.tokens){
+        const accessTokenExpires = new Date(Date.now() + response.tokens.expires_in * 1000)
+        const refreshTokenExpires = new Date(Date.now() + response.tokens.refresh_expires_in * 1000)
+
+        nextResponse.cookies.set('access_token', response.tokens.access_token, {
+          expires: accessTokenExpires,
+          httpOnly: false,
+          secure: false,
+          sameSite: 'lax',
+        })
+
+        nextResponse.cookies.set('refresh_token', response.tokens.refresh_token, {
+          expires: refreshTokenExpires,
+          httpOnly: false,
+          secure: false,
+          sameSite: 'lax',
+        })
+      }
+      return nextResponse
+    }
+  }
+  // Google callback query params: {
+  //   state: 'tvub2o89stcz9qo8wjpq',
+  //     code: '4/0AVMBsJgBFIW9aiRSrJt6ipQ8_jXq6nzsiP--KkzgWG5HJTjV3Ytwr3ng_yZLA4GO9bhr7A',
+  //     scope: 'email profile https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email openid',
+  //     authuser: '1',
+  //     prompt: 'consent'
+  // }
 
   const accessToken = request.cookies.get('access_token')?.value
   const refreshToken = request.cookies.get('refresh_token')?.value

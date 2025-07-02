@@ -7,6 +7,7 @@ export const getAllAgents = async (): Promise<AgentResponse[]> => {
     params: {
       limit: 50,
       offset: 0,
+      includePublicContent: true
     },
   });
   return response.data;
@@ -16,6 +17,7 @@ export const getAllPublicAgents = async (): Promise<AgentResponse[]> => {
     params: {
       limit: 50,
       offset: 0,
+      includePublicContent: true
     },
   });
   return response.data;

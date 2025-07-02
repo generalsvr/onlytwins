@@ -11,6 +11,7 @@ import {
 import { useAuthStore } from '@/lib/stores/authStore';
 import { TelegramAuthRequest } from '@/lib/types/auth';
 import { useModalStore } from '@/lib/stores/modalStore';
+import GoogleButton from '@/components/google-button';
 interface SocialAuthProps {
   isLoading: boolean;
   setErrors: React.Dispatch<
@@ -24,7 +25,18 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
   const closeModal = useModalStore((state) => state.closeModal);
   const handleGoogleSignup = () => {
     try {
-      router.push('/api/auth/google/authorize');
+      const params = new URLSearchParams({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+        redirect_uri: `${process.env.NEXT_PUBLIC_HOST_URL}/auth/google/callback`,
+        response_type: 'code',
+        scope: 'openid email profile',
+        state:
+          Math.random().toString(36).substring(2, 15) +
+          Math.random().toString(36).substring(2, 15),
+        access_type: 'offline',
+        prompt: 'consent',
+      });
+      window.location.replace(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`)
     } catch (error) {
       console.error('Google signup redirect error:', error);
       setErrors({ server: 'Failed to initiate Google signup.' });
@@ -115,7 +127,7 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
         {/*    />*/}
         {/*  </svg>*/}
         {/*</Button>*/}
-        <div className={'max-w-max h-full'}>
+        <div className={'max-w-max h-full flex items-start gap-2'}>
           <TelegramLoginButton
             onAuthCallback={(data) => processTelegramAuth(data)}
             botUsername={'onlytwins_chat_bot'}
@@ -124,6 +136,7 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
             showAvatar={false} // true | false
             lang="en"
           />
+          <GoogleButton onClick={handleGoogleSignup}>Google</GoogleButton>
         </div>
         {/*<Button*/}
         {/*  variant="outline"*/}

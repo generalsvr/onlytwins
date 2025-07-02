@@ -13,21 +13,31 @@ import {
   Share,
   MapPin,
   Calendar,
-  ChevronLeft,
-  ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Sparkles,
   Volume2,
   VolumeX,
   Play,
   Pause,
   User,
+  Grid,
+  Square, ChevronRight, ChevronLeft,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Controller, Mousewheel, Keyboard, EffectFade } from 'swiper/modules';
+import type { Swiper as SwiperType } from 'swiper';
 import { AgentResponse } from '@/lib/types/agents';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import AgentCard from '@/components/full-screen-feed';
 import { useLocale } from '@/contexts/LanguageContext';
+
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/effect-fade';
+import 'swiper/css/controller';
 
 interface DesktopAgentFeedProps {
   agents: AgentResponse[];
@@ -47,17 +57,26 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
   const [videoLoaded, setVideoLoaded] = useState<Set<string>>(new Set());
   const [showVideo, setShowVideo] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [swiperKey, setSwiperKey] = useState(0); // Key for forcing Swiper remount
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartY, setDragStartY] = useState(0);
+  const [dragCurrentY, setDragCurrentY] = useState(0);
+
   const { isMobile } = useWindowSize();
   const { locale, dictionary } = useLocale();
 
+  const swiperRef = useRef<SwiperType | null>(null);
   const currentVideoRef = useRef<HTMLVideoElement>(null);
   const loadingControllerRef = useRef<AbortController | null>(null);
+  const prevIsMobileRef = useRef(isMobile);
+  const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   // Получаем переводы для текущей локали
   const t = useMemo(() => {
-    return dictionary
-  }, [locale]);
+    return dictionary;
+  }, [dictionary]);
 
   // Функция для форматирования даты с учетом локали
   const formatDate = useCallback(
@@ -71,12 +90,12 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
         const month = dateObj.getMonth() + 1;
         return `${year}年${month}月`;
       } else if (locale === 'ru') {
-        const monthNames = Object.values(t.months);
+        const monthNames = Object.values(t.months || {});
         const month = monthNames[dateObj.getMonth()];
         const year = dateObj.getFullYear();
         return `${month} ${year}`;
       } else {
-        const monthNames = Object.values(t.months);
+        const monthNames = Object.values(t.months || {});
         const month = monthNames[dateObj.getMonth()];
         const year = dateObj.getFullYear();
         return `${month} ${year}`;
@@ -102,12 +121,12 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
           return `${age} лет`;
         }
       } else if (locale === 'zh') {
-        return `${age}${t.common.yearsOld}`;
+        return `${age}${t.common?.yearsOld || 'years old'}`;
       } else {
-        return `${age} ${t.common.yearsOld}`;
+        return `${age} ${t.common?.yearsOld || 'years old'}`;
       }
     },
-    [t.common.yearsOld]
+    [t.common?.yearsOld]
   );
 
   // Current selected agent
@@ -148,20 +167,20 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
     return currentVideoUrl ? `${selectedAgent?.id}-${currentVideoUrl}` : null;
   }, [selectedAgent?.id, currentVideoUrl]);
 
-  // Navigation functions
+  // Swiper navigation functions
   const goToPreviousAgent = useCallback(() => {
-    if (currentAgentIndex > 0) {
-      setCurrentAgentIndex((prev) => prev - 1);
-      setCurrentImageIndex(0);
+    if (swiperRef.current && currentAgentIndex > 0 && !isTransitioning) {
+      setIsTransitioning(true);
+      swiperRef.current.slidePrev();
     }
-  }, [currentAgentIndex]);
+  }, [currentAgentIndex, isTransitioning]);
 
   const goToNextAgent = useCallback(() => {
-    if (currentAgentIndex < agents.length - 1) {
-      setCurrentAgentIndex((prev) => prev + 1);
-      setCurrentImageIndex(0);
+    if (swiperRef.current && currentAgentIndex < agents.length - 1 && !isTransitioning) {
+      setIsTransitioning(true);
+      swiperRef.current.slideNext();
     }
-  }, [currentAgentIndex, agents.length]);
+  }, [currentAgentIndex, agents.length, isTransitioning]);
 
   // Preload video function
   const preloadVideo = useCallback(
@@ -283,7 +302,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
           }
         }, 300);
       }
-    } catch (error) {
+    } catch (error: any) {
       if (error.message !== 'Aborted') {
         console.error('Error setting up video:', error);
         setVideoError((prev) => new Set(prev).add(currentVideoKey));
@@ -311,31 +330,6 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
     preloadAgent(currentAgentIndex - 1);
     preloadAgent(currentAgentIndex + 1);
   }, [currentAgentIndex, agents, preloadVideo]);
-
-  useEffect(() => {
-    if (selectedAgent) {
-      setCurrentImageIndex(0);
-      setShowVideo(false);
-      setIsPlaying(false);
-      setupVideo();
-    }
-
-    // Preload adjacent videos
-    const preloadTimer = setTimeout(preloadAdjacentVideos, 1000);
-
-    return () => {
-      clearTimeout(preloadTimer);
-    };
-  }, [selectedAgent, setupVideo, preloadAdjacentVideos]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (loadingControllerRef.current) {
-        loadingControllerRef.current.abort();
-      }
-    };
-  }, []);
 
   // Video controls
   const playVideo = useCallback(async () => {
@@ -391,28 +385,172 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
     });
   }, []);
 
-  // Keyboard navigation
+  // Swiper event handlers
+  const handleSlideChange = useCallback((swiper: SwiperType) => {
+    const newIndex = swiper.activeIndex;
+    setCurrentAgentIndex(newIndex);
+    setCurrentImageIndex(0);
+    setShowVideo(false);
+    setIsPlaying(false);
+
+    // Reset transition state after slide change
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 100);
+  }, []);
+
+  const handleTransitionStart = useCallback(() => {
+    setIsTransitioning(true);
+  }, []);
+
+  // Mouse drag handlers for slide navigation
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isTransitioning) return;
+
+    setIsDragging(true);
+    setDragStartY(e.clientY);
+    setDragCurrentY(e.clientY);
+
+    // Prevent default to avoid text selection
+    e.preventDefault();
+  }, [isTransitioning]);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || isTransitioning) return;
+
+    setDragCurrentY(e.clientY);
+
+    // Add visual feedback by changing cursor
+    if (containerRef.current) {
+      containerRef.current.style.cursor = 'grabbing';
+    }
+  }, [isDragging, isTransitioning]);
+
+  const handleMouseUp = useCallback((e: MouseEvent) => {
+    if (!isDragging || isTransitioning) return;
+
+    const deltaY = e.clientY - dragStartY;
+    const threshold = 80; // Minimum drag distance to trigger slide change
+
+    // Reset cursor
+    if (containerRef.current) {
+      containerRef.current.style.cursor = 'grab';
+    }
+
+    // Determine slide direction based on drag distance
+    if (Math.abs(deltaY) > threshold) {
+      if (deltaY > 0) {
+        // Dragged down - go to previous slide
+        goToPreviousAgent();
+      } else {
+        // Dragged up - go to next slide
+        goToNextAgent();
+      }
+    }
+
+    // Reset drag state
+    setIsDragging(false);
+    setDragStartY(0);
+    setDragCurrentY(0);
+  }, [isDragging, isTransitioning, dragStartY, goToPreviousAgent, goToNextAgent]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (isDragging) {
+      // Reset drag state if mouse leaves the container
+      setIsDragging(false);
+      setDragStartY(0);
+      setDragCurrentY(0);
+
+      if (containerRef.current) {
+        containerRef.current.style.cursor = 'grab';
+      }
+    }
+  }, [isDragging]);
+
+  // Handle screen resolution changes
+  useEffect(() => {
+    // Check if screen type changed (mobile <-> desktop)
+    if (prevIsMobileRef.current !== isMobile) {
+      prevIsMobileRef.current = isMobile;
+
+      // If switching to desktop, reset and reinitialize Swiper
+      if (!isMobile) {
+        // Force Swiper remount by changing key
+        setSwiperKey(prev => prev + 1);
+
+        // Reset states
+        setCurrentImageIndex(0);
+        setShowVideo(false);
+        setIsPlaying(false);
+        setIsTransitioning(false);
+
+        // Small delay to ensure proper remounting
+        setTimeout(() => {
+          if (swiperRef.current && currentAgentIndex > 0) {
+            // Slide to current index without animation first
+            swiperRef.current.slideTo(currentAgentIndex, 0);
+          }
+        }, 100);
+      }
+    }
+  }, [isMobile, currentAgentIndex]);
+
+  // Sync Swiper with currentAgentIndex when Swiper is ready
+  useEffect(() => {
+    if (swiperRef.current && !isMobile && !isTransitioning) {
+      const swiperActiveIndex = swiperRef.current.activeIndex;
+      if (swiperActiveIndex !== currentAgentIndex) {
+        swiperRef.current.slideTo(currentAgentIndex, 0);
+      }
+    }
+  }, [swiperKey, currentAgentIndex, isMobile, isTransitioning]);
+
+  // Effects with scroll accumulator reset on agent change
+  useEffect(() => {
+    if (selectedAgent && !isTransitioning) {
+      setCurrentImageIndex(0);
+      setShowVideo(false);
+      setIsPlaying(false);
+      setupVideo();
+    }
+
+    // Preload adjacent videos
+    const preloadTimer = setTimeout(preloadAdjacentVideos, 1000);
+
+    return () => {
+      clearTimeout(preloadTimer);
+    };
+  }, [selectedAgent, setupVideo, preloadAdjacentVideos, isTransitioning]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (loadingControllerRef.current) {
+        loadingControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Enhanced keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTransitioning) return;
+
       switch (e.key) {
         case 'ArrowLeft':
           if (e.shiftKey) {
-            // Shift + Left = Previous agent
             goToPreviousAgent();
           } else if (currentImages.length > 1 && currentImageIndex > 0) {
-            // Left = Previous image
             setCurrentImageIndex((prev) => prev - 1);
           }
           break;
         case 'ArrowRight':
           if (e.shiftKey) {
-            // Shift + Right = Next agent
             goToNextAgent();
           } else if (
             currentImages.length > 1 &&
             currentImageIndex < currentImages.length - 1
           ) {
-            // Right = Next image
             setCurrentImageIndex((prev) => prev + 1);
           }
           break;
@@ -439,421 +577,545 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
     goToPreviousAgent,
     goToNextAgent,
     togglePlayPause,
+    isTransitioning,
   ]);
 
+  // Mouse event listeners for drag functionality
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+
+    // Add mouse event listeners
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [handleMouseMove, handleMouseUp, handleMouseLeave]);
+
+  // Animation variants for smooth transitions
+  const contentVariants = {
+    enter: {
+      opacity: 0,
+      y: 20,
+    },
+    center: {
+      opacity: 1,
+      y: 0,
+    },
+    exit: {
+      opacity: 0,
+      y: -20,
+    },
+  };
+
   if (!selectedAgent) return null;
+
+  // Return mobile version if on mobile device
   if (isMobile) {
     return <AgentCard agents={agents} />;
   }
 
   return (
-    <div className="h-max mx-auto max-w-5xl relative">
-      {/* Agent Navigation Arrows - Outside the main content */}
-      <AnimatePresence>
-        {currentAgentIndex > 0 && (
-          <motion.button
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={goToPreviousAgent}
-            className="absolute -left-40 top-1/2 transform -translate-y-1/2 z-50 p-4 rounded-full bg-black/70 backdrop-blur-sm border border-white/20 hover:bg-black/80 transition-all group"
-            aria-label={t.actions.previousAgent}
-          >
-            <ChevronLeft
-              size={32}
-              className="text-white group-hover:text-pink-400 transition-colors"
-            />
-          </motion.button>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {currentAgentIndex < agents.length - 1 && (
-          <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={goToNextAgent}
-            className="absolute -right-40 top-1/2 transform -translate-y-1/2 z-50 p-4 rounded-full bg-black/70 backdrop-blur-sm border border-white/20 hover:bg-black/80 transition-all group"
-            aria-label={t.actions.nextAgent}
-          >
-            <ChevronRight
-              size={32}
-              className="text-white group-hover:text-pink-400 transition-colors"
-            />
-          </motion.button>
-        )}
-      </AnimatePresence>
-
+    <div className="text-white h-screen overflow-hidden">
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-200px)]">
-        {/* Center Panel - Media Section */}
-        <div className="flex-1 relative bg-black h-max">
-          {/* Image/Video Display */}
-          <div className="relative h-[calc(100vh-200px)]">
-            {/* Always show image first */}
-            {currentImages[currentImageIndex] && (
-              <motion.img
-                key={`${selectedAgent.id}-${currentImageIndex}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                src={`${currentImages[currentImageIndex]}`}
-                alt={selectedAgent.name}
-                className="object-cover w-full h-full rounded-xl"
-              />
-            )}
+      <div
+        ref={containerRef}
+        onMouseDown={handleMouseDown}
+        className="relative h-full select-none"
+        style={{
+          cursor: isDragging ? 'grabbing' : 'grab',
+          userSelect: 'none'
+        }}
+      >
+        {/* Swiper Container */}
+        <Swiper
+          key={swiperKey} // Force remount on resolution change
+          modules={[Controller, Mousewheel, Keyboard, EffectFade]}
+          direction="vertical"
+          slidesPerView={1}
+          spaceBetween={0}
+          speed={600}
+          initialSlide={currentAgentIndex}
+          mousewheel={{
+            enabled: true,
+            forceToAxis: true,
+            sensitivity: 1,
+            thresholdDelta: 50,
+            thresholdTime: 500,
+          }}
+          keyboard={{
+            enabled: true,
+            onlyInViewport: true,
+          }}
+          allowTouchMove={false}
+          onSwiper={(swiper) => {
+            swiperRef.current = swiper;
+            // Ensure we're on the correct slide after initialization
+            if (currentAgentIndex > 0) {
+              setTimeout(() => {
+                swiper.slideTo(currentAgentIndex, 0);
+              }, 50);
+            }
+          }}
+          onSlideChange={handleSlideChange}
+          onTransitionStart={handleTransitionStart}
+          className="h-full"
+        >
+          {agents.map((agent, index) => {
+            return(
+              <SwiperSlide key={agent.id} className="h-[80%]">
+                <div className="max-w-7xl mx-auto px-6 h-[80%] flex items-center">
+                  <div className="w-full flex gap-5 h-full">
+                    {/* Navigation Column */}
+                    <div className="col-span-1 flex flex-col items-center justify-center space-y-6">
+                      {/* Previous Agent Button */}
+                      <AnimatePresence>
+                        {currentAgentIndex > 0 && (
+                          <motion.button
+                            key="prev-button"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={goToPreviousAgent}
+                            className="p-4 rounded-full bg-black/70 backdrop-blur-sm border border-gray-700 hover:bg-black/80 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label={t.actions?.previousAgent || 'Previous Agent'}
+                          >
+                            <ChevronUp
+                              size={20}
+                              className="text-white group-hover:text-pink-400 transition-colors"
+                            />
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
 
-            {/* Video overlay */}
-            {currentVideoUrl && !videoError.has(currentVideoKey || '') && (
-              <div
-                className={`absolute inset-0 transition-opacity duration-500 ${
-                  showVideo && isPlaying ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                <video
-                  ref={currentVideoRef}
-                  className="w-full h-full object-cover"
-                  playsInline
-                  muted={isMuted}
-                  loop
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                />
-              </div>
-            )}
-
-            {/* Gradient overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-          </div>
-
-          {/* Media Controls */}
-          <div
-            className="absolute top-6 right-6 flex items-center space-x-3 z-20"
-            aria-label={t.labels.mediaControls}
-          >
-            {/* Video Controls */}
-            {currentVideoUrl && !videoError.has(currentVideoKey || '') && (
-              <div className="flex items-center space-x-2">
-                <motion.button
-                  whileTap={{ scale: 0.8 }}
-                  onClick={togglePlayPause}
-                  className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20"
-                  aria-label={
-                    isPlaying ? t.actions.pauseVideo : t.actions.playVideo
-                  }
-                >
-                  {isPlaying ? (
-                    <Pause size={20} className="text-white" />
-                  ) : (
-                    <Play size={20} className="text-white" />
-                  )}
-                </motion.button>
-
-                {isPlaying && (
-                  <motion.button
-                    whileTap={{ scale: 0.8 }}
-                    onClick={toggleMute}
-                    className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20"
-                    aria-label={
-                      isMuted ? t.actions.unmuteVideo : t.actions.muteVideo
-                    }
-                  >
-                    {isMuted ? (
-                      <VolumeX size={20} className="text-white" />
-                    ) : (
-                      <Volume2 size={20} className="text-white" />
-                    )}
-                  </motion.button>
-                )}
-              </div>
-            )}
-
-            {/* Like Button */}
-            <motion.button
-              whileTap={{ scale: 0.8 }}
-              onClick={() => handleLike(selectedAgent.id)}
-              className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20"
-              aria-label={t.actions.likeProfile}
-            >
-              <Heart
-                size={20}
-                className={`transition-colors ${
-                  liked.has(selectedAgent.id)
-                    ? 'text-pink-500 fill-pink-500'
-                    : 'text-white'
-                }`}
-              />
-            </motion.button>
-          </div>
-
-          {/* Image Navigation - Only for images */}
-          {currentImages.length > 1 && (
-            <>
-              <div
-                className="absolute top-6 left-6 flex space-x-1 z-20"
-                aria-label={t.labels.imageNavigation}
-              >
-                {currentImages.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-8 h-1 rounded-full transition-all duration-300 cursor-pointer ${
-                      index === currentImageIndex
-                        ? 'bg-white'
-                        : 'bg-white/30 hover:bg-white/50'
-                    }`}
-                    onClick={() => setCurrentImageIndex(index)}
-                    aria-label={`${t.labels.imageNavigation} ${index + 1}`}
-                  />
-                ))}
-              </div>
-
-              {currentImageIndex > 0 && (
-                <button
-                  onClick={() => setCurrentImageIndex((prev) => prev - 1)}
-                  className="absolute left-6 bottom-1/3 transform translate-y-1/2 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 z-20 hover:bg-black/70 transition-all"
-                  aria-label={t.actions.previousImage}
-                >
-                  <ChevronLeft size={20} className="text-white" />
-                </button>
-              )}
-
-              {currentImageIndex < currentImages.length - 1 && (
-                <button
-                  onClick={() => setCurrentImageIndex((prev) => prev + 1)}
-                  className="absolute right-6 bottom-1/3 transform translate-y-1/2 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 z-20 hover:bg-black/70 transition-all"
-                  aria-label={t.actions.nextImage}
-                >
-                  <ChevronRight size={20} className="text-white" />
-                </button>
-              )}
-            </>
-          )}
-
-          {/* Bottom Info Overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-8 z-20">
-            <div className="space-y-4">
-              <div className="flex items-end justify-between">
-                <div>
-                  <motion.h1
-                    key={selectedAgent.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-4xl font-bold text-white mb-2"
-                  >
-                    {selectedAgent.name}
-                  </motion.h1>
-                  <div className="flex items-center space-x-4 text-white/80">
-                    <div className="flex items-center space-x-1">
-                      <Calendar size={16} />
-                      <span>{getAgeText(selectedAgent.meta.age, locale)}</span>
-                    </div>
-                    {selectedAgent.meta.location && (
-                      <div className="flex items-center space-x-1">
-                        <MapPin size={16} />
-                        <span>{selectedAgent.meta.location}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center space-x-4">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() =>
-                    router.push(`/${locale}/chat/${selectedAgent.id}`)
-                  }
-                  className="px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-pink-500/25"
-                >
-                  <MessageCircle size={18} className="inline mr-2" />
-                  {t.actions.startChat}
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() =>
-                    router.push(`/${locale}/character/${selectedAgent.id}`)
-                  }
-                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all duration-200"
-                >
-                  <User size={18} className="inline mr-2" />
-                  {t.actions.viewProfile}
-                </motion.button>
-
-
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Panel - Info Panel */}
-        <div className="w-96 bg-black/50 backdrop-blur-xl border-l border-white/10 overflow-y-auto ml-5">
-          <div className="p-6 space-y-6 max-h-[100%] overflow-scroll hide-scrollbar">
-            {/* Status */}
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-white font-medium">{t.common.online}</span>
-            </div>
-
-            {/* Description */}
-            {selectedAgent.description && (
-              <motion.div
-                key={selectedAgent.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <h3 className="text-white font-semibold mb-3 flex items-center">
-                  <Sparkles size={16} className="text-pink-400 mr-2" />
-                  {t.common.about}
-                </h3>
-                <p className="text-white/80 leading-relaxed">
-                  {selectedAgent.description}
-                </p>
-              </motion.div>
-            )}
-
-            {/* Details */}
-            <div className="space-y-4">
-              <h3 className="text-white font-semibold">{t.common.details}</h3>
-
-              {selectedAgent.meta.occupation && (
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <span className="text-sm">💼</span>
-                  </div>
-                  <div>
-                    <p className="text-white/60 text-sm">
-                      {t.labels.occupation}
-                    </p>
-                    <p className="text-white">
-                      {selectedAgent.meta.occupation}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center">
-                  <Calendar size={14} className="text-pink-400" />
-                </div>
-                <div>
-                  <p className="text-white/60 text-sm">{t.labels.age}</p>
-                  <p className="text-white">
-                    {getAgeText(selectedAgent.meta.age, locale)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <span className="text-sm">⚧</span>
-                </div>
-                <div>
-                  <p className="text-white/60 text-sm">{t.labels.gender}</p>
-                  <p className="text-white capitalize">
-                    {selectedAgent.meta.gender}
-                  </p>
-                </div>
-              </div>
-
-              {selectedAgent.meta.location && (
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                    <MapPin size={14} className="text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-white/60 text-sm">{t.labels.location}</p>
-                    <p className="text-white">{selectedAgent.meta.location}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Public Content */}
-            {selectedAgent.meta.publicContent &&
-              selectedAgent.meta.publicContent.length > 0 && (
-                <div>
-                  <h3 className="text-white font-semibold mb-3">
-                    {t.common.gallery}
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedAgent.meta.publicContent
-                      .filter((item) => item.mimeType?.startsWith('image/'))
-                      .slice(0, 6)
-                      .map((item, index) => (
-                        <div
-                          key={index}
-                          className="aspect-square rounded-lg overflow-hidden bg-gray-800 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => {
-                            const imageIndex = currentImages.findIndex(
-                              (img) => img === item.url
-                            );
-                            if (imageIndex !== -1) {
-                              setCurrentImageIndex(imageIndex);
-                            }
-                          }}
-                        >
-                          <img
-                            src={`${item.url}`}
-                            alt={`${selectedAgent.name} ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
+                      {/* Agent Index Indicator */}
+                      <div className="flex flex-col items-center space-y-2">
+                        <div className="text-white/60 text-sm font-medium">
+                          {currentAgentIndex + 1}
                         </div>
-                      ))}
+                        <div className="w-px h-8 bg-white/20"></div>
+                        <div className="text-white/40 text-xs">
+                          {agents.length}
+                        </div>
+                      </div>
+
+                      {/* Next Agent Button */}
+                      <AnimatePresence>
+                        {currentAgentIndex < agents.length - 1 && (
+                          <motion.button
+                            key="next-button"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={goToNextAgent}
+                            className="p-4 rounded-full bg-black/70 backdrop-blur-sm border border-gray-700 hover:bg-black/80 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label={t.actions?.nextAgent || 'Next Agent'}
+                          >
+                            <ChevronDown
+                              size={20}
+                              className="text-white group-hover:text-pink-400 transition-colors"
+                            />
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Media Section */}
+                    <div className="flex-2 w-[50%] col-span-8 relative bg-black rounded-2xl overflow-hidden">
+                      <AnimatePresence mode="wait">
+                        {index === currentAgentIndex && (
+                          <motion.div
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            variants={contentVariants}
+                            transition={{
+                              duration: 0.6,
+                              ease: [0.25, 0.46, 0.45, 0.94],
+                            }}
+                            className="relative w-full h-full"
+                          >
+                            {/* Image Display */}
+                            {currentImages[currentImageIndex] && (
+                              <motion.img
+                                initial={{ opacity: 0, scale: 1.1 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.4, delay: 0.2 }}
+                                src={currentImages[currentImageIndex]}
+                                alt={agent.name}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+
+                            {/* Video Overlay */}
+                            {currentVideoUrl && !videoError.has(currentVideoKey || '') && (
+                              <div
+                                className={`absolute inset-0 transition-opacity duration-500 ${showVideo && isPlaying ? 'opacity-100' : 'opacity-0'}`}
+                              >
+                                <video
+                                  ref={currentVideoRef}
+                                  className="w-full h-full object-cover"
+                                  playsInline
+                                  muted={isMuted}
+                                  loop
+                                  onPlay={() => setIsPlaying(true)}
+                                  onPause={() => setIsPlaying(false)}
+                                />
+                              </div>
+                            )}
+
+                            {/* Gradient Overlays */}
+                            <div
+                              className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                            <div
+                              className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/40" />
+
+                            {/* Media Controls */}
+                            <motion.div
+                              initial="enter"
+                              animate="center"
+                              exit="exit"
+                              variants={contentVariants}
+                              transition={{ delay: 0.3, duration: 0.3 }}
+                              className="absolute top-6 right-6 flex items-center space-x-3 z-20"
+                            >
+                              {currentVideoUrl && !videoError.has(currentVideoKey || '') && (
+                                <div className="flex items-center space-x-2">
+                                  <motion.button
+                                    whileTap={{ scale: 0.8 }}
+                                    onClick={togglePlayPause}
+                                    className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-all"
+                                    aria-label={
+                                      isPlaying
+                                        ? t.actions?.pauseVideo || 'Pause Video'
+                                        : t.actions?.playVideo || 'Play Video'
+                                    }
+                                  >
+                                    {isPlaying ? (
+                                      <Pause size={20} className="text-white" />
+                                    ) : (
+                                      <Play size={20} className="text-white ml-1" />
+                                    )}
+                                  </motion.button>
+
+                                  {isPlaying && (
+                                    <motion.button
+                                      whileTap={{ scale: 0.8 }}
+                                      onClick={toggleMute}
+                                      className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-all"
+                                      aria-label={
+                                        isMuted
+                                          ? t.actions?.unmuteVideo || 'Unmute Video'
+                                          : t.actions?.muteVideo || 'Mute Video'
+                                      }
+                                    >
+                                      {isMuted ? (
+                                        <VolumeX size={20} className="text-white" />
+                                      ) : (
+                                        <Volume2 size={20} className="text-white" />
+                                      )}
+                                    </motion.button>
+                                  )}
+                                </div>
+                              )}
+
+                            </motion.div>
+
+                            {/* Image Navigation */}
+                            {currentImages.length > 1 && (
+                              <motion.div
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                variants={contentVariants}
+                                transition={{ delay: 0.3, duration: 0.3 }}
+                              >
+                                <div
+                                  className="absolute top-6 left-6 flex space-x-2 z-20"
+                                  aria-label={t.labels?.imageNavigation || 'Image Navigation'}
+                                >
+                                  {currentImages.map((_, imageIndex) => (
+                                    <button
+                                      key={imageIndex}
+                                      onClick={() => setCurrentImageIndex(imageIndex)}
+                                      className={`w-10 h-1 rounded-full transition-all ${
+                                        imageIndex === currentImageIndex
+                                          ? 'bg-white'
+                                          : 'bg-white/30 hover:bg-white/50'
+                                      }`}
+                                      aria-label={`${t.labels?.imageNavigation || 'Image'} ${imageIndex + 1}`}
+                                    />
+                                  ))}
+                                </div>
+
+                                {currentImageIndex > 0 && (
+                                  <button
+                                    onClick={() => setCurrentImageIndex((prev) => prev - 1)}
+                                    className="absolute left-6 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-all"
+                                    aria-label={t.actions?.previousImage || 'Previous Image'}
+                                  >
+                                    <ChevronLeft
+                                      size={20}
+                                      className="text-white"
+                                    />
+                                  </button>
+                                )}
+
+                                {currentImageIndex < currentImages.length - 1 && (
+                                  <button
+                                    onClick={() => setCurrentImageIndex((prev) => prev + 1)}
+                                    className="absolute right-6 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-all"
+                                    aria-label={t.actions?.nextImage || 'Next Image'}
+                                  >
+                                    <ChevronRight
+                                      size={20}
+                                      className="text-white"
+                                    />
+                                  </button>
+                                )}
+                              </motion.div>
+                            )}
+
+                            {/* Bottom Info Overlay */}
+                            <motion.div
+                              initial="enter"
+                              animate="center"
+                              exit="exit"
+                              variants={contentVariants}
+                              transition={{ delay: 0.4, duration: 0.3 }}
+                              className="absolute bottom-0 left-0 right-0 p-8 z-20 md:p-4"
+                            >
+                              <div className="space-y-4">
+                                <div>
+                                  <h1 className="text-4xl font-bold text-white mb-2">
+                                    {agent.name}
+                                  </h1>
+                                  <div className="flex items-center text-white/80 flex-wrap gap-2">
+                                    <div className="flex items-center space-x-1">
+                                      <Calendar size={16} />
+                                      <span>
+                                      {getAgeText(agent.meta.age, locale)}
+                                    </span>
+                                    </div>
+                                    <span>•</span>
+                                    <span>{agent.meta.occupation}</span>
+                                    <span>•</span>
+                                    <span>{agent.meta.gender}</span>
+                                    {agent.meta.location && (
+                                      <>
+                                        <span>•</span>
+                                        <div className="flex items-center space-x-1">
+                                          <MapPin size={16} />
+                                          <span>{agent.meta.location}</span>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center space-x-4">
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() =>
+                                      router.push(`/${locale}/chat/${agent.id}`)
+                                    }
+                                    className="md:text-sm md:px-5 lg:px-8 lg:text-[16px] py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-pink-500/25 "
+                                  >
+                                    <MessageCircle size={18} className="inline mr-2" />
+                                    {t.actions?.startChat || 'Chat with me'}
+                                  </motion.button>
+
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() =>
+                                      router.push(`/${locale}/character/${agent.id}`)
+                                    }
+                                    className="md:text-sm md:px-5 lg:px-6 lg:text-[16px]  py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all duration-200  "
+                                  >
+                                    <User size={18} className="inline mr-2" />
+                                    {t.actions?.viewProfile || 'View full profile'}
+                                  </motion.button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Info Panel */}
+                    <div className="flex-1 col-span-5 bg-black/30 backdrop-blur-xl rounded-2xl border border-gray-800 overflow-hidden">
+                      <div className="p-6 h-full overflow-y-auto">
+                        <AnimatePresence mode="wait">
+                          {index === currentAgentIndex && (
+                            <motion.div
+                              initial="enter"
+                              animate="center"
+                              exit="exit"
+                              variants={contentVariants}
+                              transition={{ duration: 0.4, delay: 0.2 }}
+                              className="space-y-6"
+                            >
+                              {/* Header */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <img
+                                    src={agent.meta.profileImage}
+                                    alt={agent.name}
+                                    className="w-12 h-12 rounded-full object-cover border-2 border-pink-500"
+                                  />
+                                  <div>
+                                    <h3 className="font-semibold text-lg">
+                                      {agent.name}
+                                    </h3>
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                      <span className="text-sm text-green-400">
+                                      {t.common?.online || 'Online'}
+                                    </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Description */}
+                              {agent.description && (
+                                <div>
+                                  <h4 className="text-white font-semibold mb-3 flex items-center">
+                                    <Sparkles size={16} className="text-pink-400 mr-2" />
+                                    {t.common?.about || 'About'}
+                                  </h4>
+                                  <p className="text-white/80 leading-relaxed">
+                                    {agent.description}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Details */}
+                              <div className="space-y-4">
+                                <h4 className="text-white font-semibold">
+                                  {t.common?.details || 'Details'}
+                                </h4>
+
+                                <div className="space-y-3">
+                                  {agent.meta.occupation && (
+                                    <div className="flex items-center space-x-3">
+                                      <div
+                                        className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                        <span className="text-sm">💼</span>
+                                      </div>
+                                      <div>
+                                        <p className="text-white/60 text-sm">
+                                          {t.labels?.occupation || 'Occupation'}
+                                        </p>
+                                        <p className="text-white">
+                                          {agent.meta.occupation}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                                      <Calendar size={14} className="text-pink-400" />
+                                    </div>
+                                    <div>
+                                      <p className="text-white/60 text-sm">
+                                        {t.labels?.age || 'Age'}
+                                      </p>
+                                      <p className="text-white">
+                                        {getAgeText(agent.meta.age, locale)}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                      <span className="text-sm">⚧</span>
+                                    </div>
+                                    <div>
+                                      <p className="text-white/60 text-sm">
+                                        {t.labels?.gender || 'Gender'}
+                                      </p>
+                                      <p className="text-white capitalize">
+                                        {agent.meta.gender}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {agent.meta.location && (
+                                    <div className="flex items-center space-x-3">
+                                      <div
+                                        className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                                        <MapPin size={14} className="text-green-400" />
+                                      </div>
+                                      <div>
+                                        <p className="text-white/60 text-sm">
+                                          {t.labels?.location || 'Location'}
+                                        </p>
+                                        <p className="text-white">
+                                          {agent.meta.location}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Loading indicator */}
+                              {isVideoLoading && (
+                                <div className="flex items-center justify-center p-4">
+                                  <div className="flex items-center space-x-2 text-white/60">
+                                    <div
+                                      className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                                    <span>{t.common?.loading || 'Loading'}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )}
+              </SwiperSlide>
+            )
+          })}
+        </Swiper>
 
-            {/* Stats */}
-            {/*<div className="border-t border-white/10 pt-6">*/}
-            {/*  <h3 className="text-white font-semibold mb-4">*/}
-            {/*    {t.common.stats}*/}
-            {/*  </h3>*/}
-            {/*  <div className="space-y-3">*/}
-            {/*    <div className="flex justify-between items-center">*/}
-            {/*      <span className="text-white/60">{t.common.profileViews}</span>*/}
-            {/*      <span className="text-white font-medium">*/}
-            {/*        {Math.floor(Math.random() * 1000) + 500}*/}
-            {/*      </span>*/}
-            {/*    </div>*/}
-            {/*    <div className="flex justify-between items-center">*/}
-            {/*      <span className="text-white/60">{t.common.likes}</span>*/}
-            {/*      <span className="text-white font-medium">*/}
-            {/*        {Math.floor(Math.random() * 500) + 100}*/}
-            {/*      </span>*/}
-            {/*    </div>*/}
-            {/*    <div className="flex justify-between items-center">*/}
-            {/*      <span className="text-white/60">{t.common.responseRate}</span>*/}
-            {/*      <span className="text-green-400 font-medium">98%</span>*/}
-            {/*    </div>*/}
-            {/*    <div className="flex justify-between items-center">*/}
-            {/*      <span className="text-white/60">{t.common.joined}</span>*/}
-            {/*      <span className="text-white font-medium">*/}
-            {/*        {formatDate(selectedAgent.createdAt, locale)}*/}
-            {/*      </span>*/}
-            {/*    </div>*/}
-            {/*  </div>*/}
-            {/*</div>*/}
-
-            {/* Loading indicator */}
-            {isVideoLoading && (
-              <div className="flex items-center justify-center p-4">
-                <div className="flex items-center space-x-2 text-white/60">
-                  <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-                  <span>{t.common.loading}</span>
+        {/* Drag Indicator */}
+        <AnimatePresence>
+          {isDragging && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none"
+            >
+              <div className="bg-black/80 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-600">
+                <div className="flex items-center space-x-2 text-white/80">
+                  <span className="text-sm">
+                    {dragCurrentY - dragStartY > 0 ? '↓ Previous' : '↑ Next'}
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
