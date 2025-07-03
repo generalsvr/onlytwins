@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 interface DeviceType {
   isMobile: boolean;
   isDesktop: boolean;
+  isSmallMobile: boolean;
 }
 
 /**
@@ -15,6 +16,7 @@ interface DeviceType {
 const useWindowSize = (): DeviceType => {
   // State to track if the device is mobile
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isSmallMobile, setIsSmallMobile] = useState<boolean>(false);
 
   useEffect(() => {
     // Ensure the code runs only in the browser environment
@@ -22,13 +24,16 @@ const useWindowSize = (): DeviceType => {
 
     // Define the media query for mobile devices (screen width <= 768px)
     const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const mediaQuerySm = window.matchMedia('(max-width: 370px)');
 
     // Set initial value based on the current screen size
     setIsMobile(mediaQuery.matches);
+    setIsSmallMobile(mediaQuerySm.matches);
 
     // Handler for media query changes
     const handleChange = (event: MediaQueryListEvent) => {
       setIsMobile(event.matches);
+      setIsSmallMobile(event.matches);
     };
 
     // Add event listener for media query changes
@@ -39,7 +44,7 @@ const useWindowSize = (): DeviceType => {
   }, []);
 
   // Return object with mobile and desktop flags
-  return { isMobile, isDesktop: !isMobile };
+  return { isMobile, isDesktop: !isMobile, isSmallMobile };
 };
 
 export default useWindowSize;

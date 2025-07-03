@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 
-type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+type Breakpoint = 'xs' | 'm' | 'ms' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
 const breakpoints = {
   xs: 0,
+  ms:320,
+  m:375,
   sm: 640,
   md: 768,
   lg: 1024,

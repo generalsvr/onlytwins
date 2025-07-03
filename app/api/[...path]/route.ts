@@ -102,7 +102,7 @@ export async function PUT(
   const url = `${EXTERNAL_API_URL}/${path}`;
   const body = await request.json();
   const authToken = request.headers.get('Authorization');
-
+  console.log(body)
   try {
     const response = await fetch(url, {
       method: 'PUT',
@@ -117,6 +117,7 @@ export async function PUT(
     const data = await response.json();
 
     if (!response.ok) {
+      console.log(data)
       return NextResponse.json(
         { error: data.error },
         { status: response.status }

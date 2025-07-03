@@ -21,7 +21,7 @@ import {
   Volume2,
   VolumeX,
   Play,
-  Pause,
+  Pause, User,
 } from 'lucide-react';
 import {
   motion,
@@ -33,6 +33,8 @@ import {
 import { useRouter } from 'next/navigation';
 import SafeImage from '@/components/safe-image';
 import { AgentResponse } from '@/lib/types/agents';
+import { useLocale } from '@/contexts/LanguageContext';
+import useWindowSize from '@/lib/hooks/useWindowSize';
 
 interface AgentCardProps {
   agents: AgentResponse[];
@@ -53,6 +55,8 @@ export default function AgentCard({ agents }: AgentCardProps) {
   const [videoLoaded, setVideoLoaded] = useState<Set<string>>(new Set());
   const [showVideo, setShowVideo] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const {locale} = useLocale()
+  const {isSmallMobile} = useWindowSize();
 
   const currentVideoRef = useRef<HTMLVideoElement>(null);
   const loadingControllerRef = useRef<AbortController | null>(null);
@@ -667,12 +671,31 @@ export default function AgentCard({ agents }: AgentCardProps) {
               </p>
             )}
           </div>
-          <button
-            onClick={() => router.push(`/character/${currentAgent.id}`)}
-            className="px-6 py-2 text-sm font-semibold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-pink-500/25"
-          >
-            View profile
-          </button>
+          <div className={'flex items-center gap-2'}>
+            <button
+              onClick={() => router.push(`/${locale}/chat/${currentAgent.id}`)}
+              className=" flex items-center px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 ms:text-sm text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-pink-500/25 "
+            >
+              {
+                !isSmallMobile && (
+                  <MessageCircle size={16} className="inline mr-2" />
+                )
+              }
+
+              Start chat
+            </button>
+            <button
+              onClick={() => router.push(`/character/${currentAgent.id}`)}
+              className=" flex items-center px-6 py-2 bg-white/10 hover:bg-white/20 text-white font-semibold ms:text-sm  rounded-full border border-white/20 transition-all duration-200"
+            >
+              {
+                !isSmallMobile && (
+                  <User size={16} className="inline mr-2" />
+                )
+              }
+              View profile
+            </button>
+          </div>
         </div>
 
         {/* Image Navigation Arrows - only for images */}

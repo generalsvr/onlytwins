@@ -931,7 +931,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                                     onClick={() =>
                                       router.push(`/${locale}/chat/${agent.id}`)
                                     }
-                                    className="md:text-sm md:px-5 lg:px-8 lg:text-[16px] py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-pink-500/25 "
+                                    className="flex items-center  md:text-sm md:px-5 lg:px-8 lg:text-[16px] py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-pink-500/25 "
                                   >
                                     <MessageCircle size={18} className="inline mr-2" />
                                     {t.actions?.startChat || 'Chat with me'}
@@ -943,7 +943,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                                     onClick={() =>
                                       router.push(`/${locale}/character/${agent.id}`)
                                     }
-                                    className="md:text-sm md:px-5 lg:px-6 lg:text-[16px]  py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all duration-200  "
+                                    className="flex items-center md:text-sm md:px-5 lg:px-6 lg:text-[16px]  py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all duration-200  "
                                   >
                                     <User size={18} className="inline mr-2" />
                                     {t.actions?.viewProfile || 'View full profile'}

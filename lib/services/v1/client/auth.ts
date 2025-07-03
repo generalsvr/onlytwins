@@ -2,7 +2,9 @@ import {
   AuthResponse,
   ChangePasswordRequest,
   LoginRequest,
-  RegisterRequest, TelegramAuthRequest, TokenResponse,
+  RegisterRequest,
+  TelegramAuthRequest,
+  TokenResponse,
   UpdateProfileRequest,
   UserResponse,
 } from '@/lib/types/auth';
@@ -48,7 +50,10 @@ export const authService = {
 
   // Change password
   async changePassword(data: ChangePasswordRequest): Promise<string> {
-    const response = await clientApi.post<string>('/auth/change-password', data);
+    const response = await clientApi.post<string>(
+      '/auth/change-password',
+      data
+    );
     return response.data;
   },
 
@@ -73,6 +78,7 @@ export const authService = {
 
   // Telegram authentication
   async telegramAuth(data: TelegramAuthRequest): Promise<AuthResponse> {
+    console.log('data', data);
     const response = await clientApi.put<AuthResponse>('/auth/telegram', data);
     setTokens({
       accessToken: response.data.token.accessToken,

@@ -2,16 +2,27 @@
 import { useRouter } from 'next/navigation';
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { NextRouter } from 'next/router';
+
 import {
   TelegramAuthData,
   TelegramLoginButton,
 } from '@/components/telegram-login';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { TelegramAuthRequest } from '@/lib/types/auth';
 import { useModalStore } from '@/lib/stores/modalStore';
 import GoogleButton from '@/components/google-button';
+import {
+  isTMA,
+  initData,
+  initDataRaw,
+  retrieveRawInitData,
+  retrieveLaunchParams,
+  init,
+} from '@telegram-apps/sdk';
+import { TelegramAuthRequest } from '@/lib/types/auth';
+import useWindowSize from '@/lib/hooks/useWindowSize';
+import TelegramButton from '@/components/telegram-button';
+import { CustomTelegramButton } from '@/components/auht-telegram-btn';
+
 interface SocialAuthProps {
   isLoading: boolean;
   setErrors: React.Dispatch<
@@ -22,6 +33,7 @@ interface SocialAuthProps {
 export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
   const router = useRouter();
   const { telegramAuth, platform } = useAuthStore();
+  const { isMobile } = useWindowSize();
   const closeModal = useModalStore((state) => state.closeModal);
   const handleGoogleSignup = () => {
     try {
@@ -36,7 +48,9 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
         access_type: 'offline',
         prompt: 'consent',
       });
-      window.location.replace(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`)
+      window.location.replace(
+        `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+      );
     } catch (error) {
       console.error('Google signup redirect error:', error);
       setErrors({ server: 'Failed to initiate Google signup.' });
@@ -51,9 +65,28 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
       setErrors({ server: 'Failed to initiate Twitter signup.' });
     }
   };
-  const processTelegramAuth = async (data: TelegramAuthData) => {
+  const processTelegramAuth = async (data?: TelegramAuthData) => {
     try {
       // Create URL-encoded query string for initData (matching Telegram's format)
+      let newData = data;
+
+      if (isTMA()) {
+        const { tgWebAppData } = retrieveLaunchParams();
+        // Получаем данные пользователя
+        const user = tgWebAppData.user;
+        const hash = tgWebAppData.hash;
+        const authDate = tgWebAppData.auth_date;
+        newData = {
+          auth_date: Math.floor(new Date(authDate).getTime() / 1000),
+          hash: hash,
+          first_name: user?.first_name || '',
+          last_name: user?.last_name || null,
+          id: user!.id,
+          photo_url: user?.photo_url || null,
+          username: user?.username || null,
+        };
+      }
+
       const dataParams = [];
       const fields = [
         'auth_date',
@@ -65,30 +98,28 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
       ];
 
       for (const field of fields) {
-        if (data[field] !== undefined && data[field] !== null) {
-          dataParams.push(`${field}=${encodeURIComponent(data[field])}`);
+        if (newData[field] !== undefined && newData[field] !== null) {
+          dataParams.push(`${field}=${encodeURIComponent(newData[field])}`);
         }
       }
 
       // Add hash to the query string
-      dataParams.push(`hash=${data.hash}`);
+      dataParams.push(`hash=${newData.hash}`);
 
       // Create URL-encoded initData string
       const initDataString = dataParams.sort().join('&');
 
-      // Prepare Telegram auth data
       const telegramAuthData = {
         initData: initDataString,
-        id: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name || null,
-        username: data.username || null,
-        photoUrl: data.photo_url || null,
-        authDate: data.auth_date,
-        hash: data.hash,
+        id: newData.id,
+        firstName: newData.first_name,
+        lastName: newData.last_name || null,
+        username: newData.username || null,
+        photoUrl: newData.photo_url || null,
+        authDate: newData.auth_date,
+        hash: newData.hash,
       };
-
-      await telegramAuth(telegramAuthData).then(() => {
+      await telegramAuth(telegramAuthData as TelegramAuthRequest).then(() => {
         closeModal();
         router.push('/profile');
       });
@@ -127,15 +158,26 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
         {/*    />*/}
         {/*  </svg>*/}
         {/*</Button>*/}
-        <div className={'max-w-max h-full flex items-start gap-2'}>
-          <TelegramLoginButton
-            onAuthCallback={(data) => processTelegramAuth(data)}
-            botUsername={'onlytwins_chat_bot'}
-            buttonSize="large" // "large" | "medium" | "small"
-            cornerRadius={5} // 0 - 20
-            showAvatar={false} // true | false
-            lang="en"
-          />
+        <div
+          className={`max-w-max h-full flex items-center gap-4 ${isMobile && 'flex-wrap max-w-full w-full'}`}
+        >
+          {isTMA() ? (
+            <TelegramButton onClick={processTelegramAuth} />
+          ) : (
+            // <TelegramLoginButton
+            //   onAuthCallback={(data) => processTelegramAuth(data)}
+            //   botUsername={'onlytwins_chat_bot'}
+            //   buttonSize="large" // "large" | "medium" | "small"
+            //   cornerRadius={5} // 0 - 20
+            //   showAvatar={false} // true | false
+            //   lang="en"
+            // />
+            <CustomTelegramButton
+              onAuth={(data) => processTelegramAuth(data)}
+              botName={'onlytwins_chat_bot'}
+            />
+          )}
+
           <GoogleButton onClick={handleGoogleSignup}>Google</GoogleButton>
         </div>
         {/*<Button*/}
