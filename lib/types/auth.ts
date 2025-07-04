@@ -60,6 +60,7 @@ export interface TelegramAuthRequest {
   photoUrl: string | null;
   authDate: number;
   hash: string;
+  initDataRaw?: string
 }
 
 export interface ValidationError {

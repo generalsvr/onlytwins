@@ -101,23 +101,25 @@ export async function PUT(
   const path = resolvedParams.path.join('/');
   const url = `${EXTERNAL_API_URL}/${path}`;
   const body = await request.json();
+  const telegramAuth = request.headers.get('Authorization');
   const authToken = request.headers.get('Authorization');
-  console.log(body)
+  console.log(telegramAuth);
   try {
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
         ...(authToken && { Authorization: authToken }),
+        ...(telegramAuth && { Authorization: telegramAuth }),
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify(body),
+      body: telegramAuth ? JSON.stringify({}) : JSON.stringify(body),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.log(data)
+      console.log(data.error.details.validation_errors);
       return NextResponse.json(
         { error: data.error },
         { status: response.status }

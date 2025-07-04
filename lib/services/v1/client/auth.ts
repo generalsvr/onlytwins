@@ -79,7 +79,11 @@ export const authService = {
   // Telegram authentication
   async telegramAuth(data: TelegramAuthRequest): Promise<AuthResponse> {
     console.log('data', data);
-    const response = await clientApi.put<AuthResponse>('/auth/telegram', data);
+    const response = await clientApi.put<AuthResponse>('/auth/telegram', data, {
+      headers: {
+        ...(data?.initDataRaw && { Authorization: `tma ${data.initDataRaw}` }),
+      },
+    });
     setTokens({
       accessToken: response.data.token.accessToken,
       refreshToken: response.data.token.refreshToken,

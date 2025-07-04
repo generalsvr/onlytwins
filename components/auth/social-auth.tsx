@@ -69,8 +69,9 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
     try {
       // Create URL-encoded query string for initData (matching Telegram's format)
       let newData = data;
-
+      let initDataRaw;
       if (isTMA()) {
+        initDataRaw = retrieveRawInitData();
         const { tgWebAppData } = retrieveLaunchParams();
         // Получаем данные пользователя
         const user = tgWebAppData.user;
@@ -85,6 +86,7 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
           photo_url: user?.photo_url || null,
           username: user?.username || null,
         };
+        // alert(JSON.stringify(newData))
       }
 
       const dataParams = [];
@@ -118,6 +120,7 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
         photoUrl: newData.photo_url || null,
         authDate: newData.auth_date,
         hash: newData.hash,
+        ...(initDataRaw && { initDataRaw: initDataRaw }),
       };
       await telegramAuth(telegramAuthData as TelegramAuthRequest).then(() => {
         closeModal();
