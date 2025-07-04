@@ -208,13 +208,12 @@ export default function MainNavigation() {
                 ? 'true'
                 : 'false'
             }
-            style={{ justifyContent: isTMA() ? 'start' : 'center' }}
             className={`
-                ${isTMA() && 'justify-items-start'} relative flex items-center justify-center transition-all duration-200
+                 relative flex items-center transition-all duration-200
                 ${isMobile ? `flex-col flex-1 h-full px-2 ${isTMA() && 'pt-[12px]'}` : 'w-full h-16 my-1'}
                 ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
                 ${active ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}
-                group 
+                group ${isTMA() ? 'justify-start' : 'justify-center'}
               `}
             onClick={() => handleNavigate(item)}
             whileTap={!disabled ? { scale: 0.9 } : {}}

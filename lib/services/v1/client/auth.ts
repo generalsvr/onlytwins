@@ -81,7 +81,7 @@ export const authService = {
     console.log('data', data);
     const response = await clientApi.put<AuthResponse>('/auth/telegram', data, {
       headers: {
-        ...(data?.initDataRaw && { Authorization: `tma ${data.initDataRaw}` }),
+        ...(data?.initDataRaw && { AuthorizationTelegram: `tma ${data.initDataRaw}` }),
       },
     });
     setTokens({

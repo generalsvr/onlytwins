@@ -102,7 +102,7 @@ export async function PUT(
   const path = resolvedParams.path.join('/');
   const url = `${EXTERNAL_API_URL}/${path}`;
   const body = await request.json();
-  const telegramAuth = request.headers.get('Authorization');
+  const telegramAuth = request.headers.get('AuthorizationTelegram');
   const authToken = request.headers.get('Authorization');
   console.log(telegramAuth);
   try {
