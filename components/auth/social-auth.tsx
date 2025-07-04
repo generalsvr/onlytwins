@@ -22,6 +22,7 @@ import { TelegramAuthRequest } from '@/lib/types/auth';
 import useWindowSize from '@/lib/hooks/useWindowSize';
 import TelegramButton from '@/components/telegram-button';
 import { CustomTelegramButton } from '@/components/auht-telegram-btn';
+import { useLoadingStore } from '@/lib/stores/useLoadingStore';
 
 interface SocialAuthProps {
   isLoading: boolean;
@@ -35,6 +36,7 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
   const { telegramAuth, platform } = useAuthStore();
   const { isMobile } = useWindowSize();
   const closeModal = useModalStore((state) => state.closeModal);
+  const setLoading = useLoadingStore(state => state.setLoading);
   const handleGoogleSignup = () => {
     try {
       const params = new URLSearchParams({
@@ -67,6 +69,7 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
   };
   const processTelegramAuth = async (data?: TelegramAuthData) => {
     try {
+      setLoading(true)
       // Create URL-encoded query string for initData (matching Telegram's format)
       let newData = data;
       let initDataRaw;
@@ -125,9 +128,11 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
       await telegramAuth(telegramAuthData as TelegramAuthRequest).then(() => {
         closeModal();
         router.push('/profile');
+        setLoading(false)
       });
     } catch (err: any) {
       console.error('Telegram auth processing error:', err);
+      setLoading(false)
     }
   };
 

@@ -25,6 +25,7 @@ import useWindowSize from '@/lib/hooks/useWindowSize';
 import AuthModal from '@/components/auth/auth-modal';
 import { useModalStore } from '@/lib/stores/modalStore';
 import { useLocale } from '@/contexts/LanguageContext';
+import { isTMA } from '@telegram-apps/sdk';
 
 interface NavItem {
   id: string;
@@ -39,7 +40,7 @@ interface NavItem {
 }
 
 export default function MainNavigation() {
-  const { isAuthenticated } = useAuthStore(state => state);
+  const { isAuthenticated } = useAuthStore((state) => state);
   const { isMobile } = useWindowSize();
   const { closeModal, openModal } = useModalStore((state) => state);
   const { dictionary, locale } = useLocale();
@@ -54,43 +55,46 @@ export default function MainNavigation() {
     return `/${locale}${path}`;
   };
 
-  const navItems: NavItem[] = useMemo(() => [
-    {
-      id: 'feed',
-      icon: Home,
-      label: dictionary.navigation.feed,
-      path: createLocalizedPath('/')
-    },
-    {
-      id: 'explore',
-      icon: Search,
-      label: dictionary.navigation.explore,
-      path: createLocalizedPath('/explore')
-    },
-    {
-      id: 'chats',
-      icon: MessageCircle,
-      label: dictionary.navigation.chat,
-      path: createLocalizedPath('/chats'),
-      isAuth: true,
-      badge: 0, // Mock unread count
-    },
-    {
-      id: 'earn',
-      icon: DollarSign,
-      inDev: true,
-      label: dictionary.navigation.earn,
-      path: createLocalizedPath('/earn'),
-      isAuth: true,
-    },
-    {
-      id: 'profile',
-      icon: User,
-      label: dictionary.navigation.profile,
-      path: createLocalizedPath('/profile'),
-      isAuth: true,
-    },
-  ], [dictionary.navigation, locale]);
+  const navItems: NavItem[] = useMemo(
+    () => [
+      {
+        id: 'feed',
+        icon: Home,
+        label: dictionary.navigation.feed,
+        path: createLocalizedPath('/'),
+      },
+      {
+        id: 'explore',
+        icon: Search,
+        label: dictionary.navigation.explore,
+        path: createLocalizedPath('/explore'),
+      },
+      {
+        id: 'chats',
+        icon: MessageCircle,
+        label: dictionary.navigation.chat,
+        path: createLocalizedPath('/chats'),
+        isAuth: true,
+        badge: 0, // Mock unread count
+      },
+      {
+        id: 'earn',
+        icon: DollarSign,
+        inDev: true,
+        label: dictionary.navigation.earn,
+        path: createLocalizedPath('/earn'),
+        isAuth: true,
+      },
+      {
+        id: 'profile',
+        icon: User,
+        label: dictionary.navigation.profile,
+        path: createLocalizedPath('/profile'),
+        isAuth: true,
+      },
+    ],
+    [dictionary.navigation, locale]
+  );
 
   const navRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
@@ -176,10 +180,10 @@ export default function MainNavigation() {
       className={`
           ${isMobile ? 'fixed left-0 right-0 bottom-0' : 'absolute-center-right'}  z-50 bg-zinc-900/60 backdrop-blur-xl border border-zinc-700/30 shadow-2xl
           ${
-        isMobile
-          ? 'h-16 rounded-2xl flex justify-around items-center'
-          : 'top-1/2 right-6 transform -translate-y-1/2 w-20 rounded-2xl flex flex-col justify-center items-center py-4'
-      }
+            isMobile
+              ? `h-16 rounded-2xl flex justify-around items-center ${isTMA() && 'h-24'}`
+              : 'top-1/2 right-6 transform -translate-y-1/2 w-20 rounded-2xl flex flex-col justify-center items-center py-4'
+          }
         `}
     >
       {/* Active indicator */}
@@ -204,12 +208,13 @@ export default function MainNavigation() {
                 ? 'true'
                 : 'false'
             }
+            style={{ justifyContent: isTMA() ? 'start' : 'center' }}
             className={`
-                relative flex items-center justify-center transition-all duration-200
-                ${isMobile ? 'flex-col flex-1 h-full px-2' : 'w-full h-16 my-1'}
+                ${isTMA() && 'justify-items-start'} relative flex items-center justify-center transition-all duration-200
+                ${isMobile ? `flex-col flex-1 h-full px-2 ${isTMA() && 'pt-[12px]'}` : 'w-full h-16 my-1'}
                 ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
                 ${active ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}
-                group
+                group 
               `}
             onClick={() => handleNavigate(item)}
             whileTap={!disabled ? { scale: 0.9 } : {}}
@@ -225,10 +230,10 @@ export default function MainNavigation() {
                 className={`
                   p-2 rounded-xl transition-all duration-200
                   ${
-                  active
-                    ? 'bg-gradient-to-r from-pink-500/20 to-purple-600/20 shadow-lg'
-                    : 'group-hover:bg-zinc-700/50'
-                }
+                    active
+                      ? 'bg-gradient-to-r from-pink-500/20 to-purple-600/20 shadow-lg'
+                      : 'group-hover:bg-zinc-700/50'
+                  }
                 `}
               >
                 <item.icon size={isMobile ? 22 : 24} />

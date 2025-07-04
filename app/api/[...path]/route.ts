@@ -58,7 +58,7 @@ export async function POST(
   const body = await request.json();
   const authToken = request.headers.get('Authorization');
   const isServerAction = request.headers.get('ServerAction') === 'true';
-
+  console.log(body)
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -73,6 +73,7 @@ export async function POST(
     const data = await response.json();
 
     if (!response.ok) {
+      console.log(data.error)
       return NextResponse.json(
         { error: data.error },
         { status: response.status }

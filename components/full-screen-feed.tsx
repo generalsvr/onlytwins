@@ -35,6 +35,7 @@ import SafeImage from '@/components/safe-image';
 import { AgentResponse } from '@/lib/types/agents';
 import { useLocale } from '@/contexts/LanguageContext';
 import useWindowSize from '@/lib/hooks/useWindowSize';
+import { isTMA } from '@telegram-apps/sdk';
 
 interface AgentCardProps {
   agents: AgentResponse[];
@@ -435,7 +436,9 @@ export default function AgentCard({ agents }: AgentCardProps) {
     : false;
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden h-[calc(100svh-64px)]">
+    <div
+      className={`fixed inset-0 bg-black overflow-hidden h-[calc(100svh-64px)] ${isTMA() && 'h-[calc(100svh-96px)] '}`}
+    >
       <motion.div
         className="relative w-full h-full"
         style={{ y, opacity, scale }}
@@ -676,23 +679,16 @@ export default function AgentCard({ agents }: AgentCardProps) {
               onClick={() => router.push(`/${locale}/chat/${currentAgent.id}`)}
               className=" flex items-center px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 ms:text-sm text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-pink-500/25 "
             >
-              {
-                !isSmallMobile && (
-                  <MessageCircle size={16} className="inline mr-2" />
-                )
-              }
-
+              {!isSmallMobile && (
+                <MessageCircle size={16} className="inline mr-2" />
+              )}
               Start chat
             </button>
             <button
               onClick={() => router.push(`/character/${currentAgent.id}`)}
               className=" flex items-center px-6 py-2 bg-white/10 hover:bg-white/20 text-white font-semibold ms:text-sm  rounded-full border border-white/20 transition-all duration-200"
             >
-              {
-                !isSmallMobile && (
-                  <User size={16} className="inline mr-2" />
-                )
-              }
+              {!isSmallMobile && <User size={16} className="inline mr-2" />}
               View profile
             </button>
           </div>
