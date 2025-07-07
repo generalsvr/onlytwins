@@ -22,7 +22,13 @@ export interface ChatMessage {
     content: PrivateContent;
   };
 }
-
+export interface VoiceMessageRequest {
+  audioFile: File;           // audio_file* (required)
+  agentId: number;          // agent_id* (required)
+  conversationId: string;  // conversation_id (optional)
+  context?: string;         // context (optional)
+  bypassActiveCheck?: boolean; // bypass_active_check (optional)
+}
 export interface Message {
   id: string;
   text?: string;

@@ -59,14 +59,7 @@ export default function SocialAuth({ isLoading, setErrors }: SocialAuthProps) {
     }
   };
 
-  const handleTwitterSignup = () => {
-    try {
-      router.push('/api/auth/x/authorize');
-    } catch (error) {
-      console.error('Twitter signup redirect error:', error);
-      setErrors({ server: 'Failed to initiate Twitter signup.' });
-    }
-  };
+
   const processTelegramAuth = async (data?: TelegramAuthData) => {
     try {
       setLoading(true)

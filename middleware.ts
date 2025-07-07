@@ -89,9 +89,7 @@ function isTokenExpired(token: string, bufferSeconds: number = 60): boolean {
 }
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl
-  const urlObj = new URL(request.nextUrl.pathname, request.nextUrl.origin);
-  console.log(urlObj.toString());
-  console.log(request.nextUrl)
+
   if (pathname === '/auth/google/callback') {
     const queryParams = Object.fromEntries(searchParams.entries())
     if(queryParams?.state && queryParams?.code){

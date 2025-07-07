@@ -36,7 +36,7 @@ export default function CharacterChatTemplate({
   conversationId,
   history,
 }: CharacterChatTemplateProps) {
-  const { isAuthenticated, user } = useAuthStore((state) => state);
+  const { isAuthenticated, user, getCurrentUser } = useAuthStore((state) => state);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [showOptions, setShowOptions] = useState(false);
@@ -56,6 +56,7 @@ export default function CharacterChatTemplate({
   const setLoading = useLoadingStore((state) => state.setLoading);
   const { locale } = useLocale();
   const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [blob, setBlob] = useState<Blob | null>(null);
   const { purchaseContent } = usePayment(locale);
   const { errorHandler } = useErrorHandler();
   const {
@@ -304,9 +305,9 @@ export default function CharacterChatTemplate({
   });
 
   // Обработка завершения записи
-  function handleRecordingComplete(audioBlob: Blob, audioUrl: string) {
-
+  async function handleRecordingComplete(audioBlob: Blob, audioUrl: string) {
     // Сохраняем URL записи для прослушивания
+    setBlob(audioBlob)
     setRecordedAudioUrl(audioUrl);
 
     // Сохраняем blob для отправки на сервер
@@ -370,7 +371,8 @@ export default function CharacterChatTemplate({
   };
   // Отправка текстового сообщения
   const handleSendVoiceMessage = async () => {
-    if (recordedAudioUrl && audioUrl) {
+    if (recordedAudioUrl && audioUrl && blob) {
+      setIsTyping(true);
       const userMessageId = v4();
 
       // Добавляем голосовое сообщение пользователя локально
@@ -383,9 +385,37 @@ export default function CharacterChatTemplate({
 
       setMessages((prev) => [...prev, newUserMessage]);
 
+      const audioFile = new File([blob], `audio-${v4()}.wav`, { type: 'audio/wav' });
+      const messageId = v4()
       setRecordedAudioUrl(null);
+      setBlob(null)
       resetRecording();
+      const voiceResponse = await chatService.sendVoiceMessage({
+        audioFile,
+        agentId: character?.id,
+        conversationId: conversationId
+      });
+      if (voiceResponse.message) {
+        const newAgentMessage: Message = {
+          id: messageId,
+          text: voiceResponse.message,
+          sender: 'agent',
+          time: formatDate(voiceResponse.timestamp),
+          ...(voiceResponse?.metadata?.content && {
+            media: voiceResponse.metadata.content,
+          }),
+          ...(voiceResponse?.metadata?.audioUrl && {
+            audio: voiceResponse.metadata.audioUrl,
+          }),
+        };
 
+        setMessages((prev) => [...prev, newAgentMessage]);
+        setIsTyping(false);
+        scrollToBottom();
+
+      }
+
+      getCurrentUser()
       return;
     }
 
@@ -443,6 +473,7 @@ export default function CharacterChatTemplate({
         setMessages((prev) => [...prev, newAgentMessage]);
         setIsTyping(false);
         scrollToBottom();
+        getCurrentUser()
       }
 
       if (response.conversationId && !currentConversationId) {
