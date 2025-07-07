@@ -16,7 +16,7 @@ export function CustomTelegramButton({
   const { locale } = useLocale();
   const handleLogin = () => {
     const returnUrl = `${window.location.origin}/${locale}/auth/callback`;
-    const authUrl = `https://oauth.telegram.org/auth?bot_id=7912163340&origin=${encodeURIComponent(window.location.origin)}&return_to=${encodeURIComponent(returnUrl)}`;
+    const authUrl = `https://oauth.telegram.org/auth?bot_id=${process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID}&origin=${encodeURIComponent(window.location.origin)}&return_to=${encodeURIComponent(returnUrl)}`;
 
     window.location.href = authUrl;
 
