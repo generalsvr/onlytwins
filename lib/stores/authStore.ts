@@ -198,6 +198,8 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const response: AuthResponse = await authService.telegramAuth(data);
+          console.log('telegram auth response: ',response)
+          console.log('telegram user object: ',response.user);
           setUser(response.user);
         } catch (error) {
           const authError: AuthError = {

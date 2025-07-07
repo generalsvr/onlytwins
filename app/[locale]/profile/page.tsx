@@ -26,13 +26,13 @@ import { billingService } from '@/lib/services/v1/client/billing';
 
 
 export default function ProfilePage() {
-  const { user, logout, getCurrentUser } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const setLoading = useLoadingStore((state) => state.setLoading);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { isMobile } = useWindowSize();
   const router = useRouter();
   const { dictionary, locale } = useLocale();
-
+  console.log('client user: ', user)
   // Memoized stats to prevent unnecessary re-renders
   const stats = useMemo(
     () => [
