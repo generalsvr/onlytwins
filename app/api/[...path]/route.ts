@@ -56,20 +56,27 @@ export async function POST(
   const path = resolvedParams.path.join('/');
   const url = `${EXTERNAL_API_URL}/${path}`;
   const authToken = request.headers.get('Authorization');
+
+  const isFormData = request.headers
+    .get('Content-Type')
+    ?.includes('multipart/form-data');
   let body = null;
-  if (request.headers.get('Content-Type')?.includes('multipart/form-data')) {
+
+  if (isFormData) {
     body = await request.formData();
   } else {
     body = await request.json();
-    body = JSON.stringify(body);
   }
+
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         ...(authToken && { Authorization: authToken }),
+        ...(!isFormData && { 'Content-Type': 'application/json' }),
+        ...(!isFormData && { Accept: 'application/json' }),
       },
-      body: body
+      body: isFormData ? body : JSON.stringify(body),
     });
 
     const data = await response.json();
