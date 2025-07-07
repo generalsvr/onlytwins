@@ -1,9 +1,7 @@
 // app/api/auth/[...path]/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { setCookie } from '@/app/actions/cookies';
 
-const EXTERNAL_API_URL = 'https://platform.onlytwins.ai/api/v1';
+const EXTERNAL_API_URL = process.env.API_URL
 
 export async function GET(
   request: Request,
