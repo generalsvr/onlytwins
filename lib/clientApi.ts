@@ -4,21 +4,18 @@ import { CustomAxiosRequestConfig } from '@/lib/types/axios';
 import { getTokens, clearTokens, setTokens } from '@/lib/utils';
 import { TokenResponse } from '@/lib/types/auth';
 
-
 const clientApi: AxiosInstance = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_HOST_URL}/api`,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Request interceptor: Add Bearer token and transform keys
 clientApi.interceptors.request.use(
   async (config: CustomAxiosRequestConfig) => {
+    const isFormData = config.data instanceof FormData;
     const { accessToken, refreshToken } = getTokens();
-    const isPrivateRoute = !config.url?.includes('/public/')
+    const isPrivateRoute = !config.url?.includes('/public/');
 
-    if (config.data) {
+    if (config.data && !isFormData) {
       config.data = humps.decamelizeKeys(config.data);
     }
     if (config.params) {
@@ -61,7 +58,6 @@ clientApi.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
-
         const { refreshToken } = getTokens();
 
         if (!refreshToken) {
