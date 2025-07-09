@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const { isMobile } = useWindowSize();
   const router = useRouter();
   const { dictionary, locale } = useLocale();
-
+  console.log(user)
   // Memoized stats to prevent unnecessary re-renders
   const stats = useMemo(
     () => [

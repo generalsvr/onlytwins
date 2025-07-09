@@ -30,6 +30,7 @@ export interface UserResponse {
   isActive: boolean;
   isVerified: boolean;
   createdAt: string;
+  trial: boolean;
   balances: {
     oTT: number;
     uSD: number;
@@ -60,7 +61,7 @@ export interface TelegramAuthRequest {
   photoUrl: string | null;
   authDate: number;
   hash: string;
-  initDataRaw?: string
+  initDataRaw?: string;
 }
 
 export interface ValidationError {
