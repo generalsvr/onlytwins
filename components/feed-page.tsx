@@ -88,7 +88,7 @@ export default function ExplorePage({ agents }: FeedPageProps) {
         )}
 
         {/* Mobile: 1 column, SM: 2 columns, LG: 3 columns, XL: 4 columns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {agents &&
             agents.map((character, index) => (
               <div

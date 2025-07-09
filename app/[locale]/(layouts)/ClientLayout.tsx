@@ -59,7 +59,13 @@ export default function ClientLayout({
       setIsLoading(true);
       try {
         if (initialAuthState.user) {
-          setUser(initialAuthState.user);
+          setUser({
+            ...initialAuthState.user,
+            balances:{
+              ...initialAuthState.user.balances,
+              oTT:Number(initialAuthState.user.balances.oTT.toFixed(1))
+            }
+          });
           return;
         }
 

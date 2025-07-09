@@ -12,6 +12,8 @@ import {
   RotateCcw,
   Trash2,
 } from 'lucide-react';
+import { useModalStore } from '@/lib/stores/modalStore';
+import TokensModal from '@/components/modals/tokens';
 
 interface ChatInputProps {
   messageText: string;
@@ -62,6 +64,7 @@ export default function ChatInput({
   const canSend = (messageText.trim().length > 0 || audioUrl) && !isLoading;
   const hasMessage = messageText.trim().length > 0;
   const isPlaybackMode = audioUrl && !isRecording;
+  const openModal = useModalStore((state) => state.openModal);
 
   useEffect(() => {
     return () => {
@@ -428,6 +431,12 @@ export default function ChatInput({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="flex gap-2 mt-3 overflow-x-auto pb-1"
+              onClick={() => {
+                openModal({
+                  type: 'message',
+                  content: <TokensModal />
+                });
+              }}
             >
               <div className="flex items-center bg-white/10 backdrop-blur-sm px-3 py-1 rounded-2xl">
                 <Coins size={14} className="text-yellow-400 mr-1" />

@@ -22,6 +22,8 @@ import SocialAuth from '@/components/auth/social-auth';
 import Cookies from 'js-cookie';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from '@/contexts/LanguageContext';
+import FreeTrial from '@/components/modals/trial';
+import { useModalStore } from '@/lib/stores/modalStore';
 
 interface SignupFormProps {
   onClose: () => void;
@@ -30,6 +32,7 @@ interface SignupFormProps {
 export default function SignupForm({ onClose }: SignupFormProps) {
   const { signup, platform } = useAuthStore();
   const { dictionary, locale } = useLocale();
+  const openModal = useModalStore((state) => state.openModal);
 
   // Create localized validation schema
   const signupSchema = useMemo(
@@ -49,7 +52,7 @@ export default function SignupForm({ onClose }: SignupFormProps) {
           })
           .regex(/[0-9]/, {
             message: dictionary.auth.signup.errors.passwordNumber,
-          })
+          }),
       }),
     [locale]
   );
@@ -141,7 +144,6 @@ export default function SignupForm({ onClose }: SignupFormProps) {
     setIsLoading(true);
 
     try {
-      // Используем пустые строки для firstName и lastName, так как они больше не собираются в форме
       await signup(
         formData.email,
         formData.password,
@@ -150,13 +152,15 @@ export default function SignupForm({ onClose }: SignupFormProps) {
         formData.referralCode ? formData.referralCode : undefined
       );
 
-      // Сохраняем referral code если он есть
       if (formData.referralCode && typeof window !== 'undefined') {
         Cookies.set('referral_code', formData.referralCode, { expires: 60 });
       }
 
       onClose();
       router.push('/profile');
+      openModal({
+        content: <FreeTrial />,
+      });
     } catch (err) {
       const error = err as AuthError;
       let errorMessage = dictionary.auth.signup.errors.createAccountFailed;
