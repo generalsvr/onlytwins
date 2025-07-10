@@ -348,7 +348,7 @@ export default function CharacterChatTemplate({
           id: messageId,
           text: REGISTRATION_MESSAGE[
             Math.floor(Math.random() * REGISTRATION_MESSAGE.length)
-            ],
+          ],
           sender: 'agent',
           time: getCurrentTime(),
         };
@@ -403,11 +403,7 @@ export default function CharacterChatTemplate({
         }
       }
 
-      if (
-        response.conversationId &&
-        !currentConversationId &&
-        isAuthenticated
-      ) {
+      if (response.conversationId && !currentConversationId) {
         setCurrentConversationId(response.conversationId);
       }
     } catch (error) {
