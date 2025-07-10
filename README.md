@@ -1,4 +1,5 @@
-#  OnlyTwins Next.js Application (STAGING)
+#  OnlyTwins Next.js Application (PRODUCTION)
+
 ## 🔧 Environment Variables
 
 | Variable | Description                               | Required |
