@@ -26,7 +26,6 @@ export default function ChatPage({ initialConversations, userSubscription, error
   const user = useAuthStore(state => state.user);
   const { dictionary } = useLocale();
 
-  console.log('user', userSubscription)
   const {
     conversations,
     error: hookError,

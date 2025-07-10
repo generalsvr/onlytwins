@@ -424,28 +424,41 @@ export default function ChatInput({
               )}
             </AnimatePresence>
           </div>
-
-          {/* Quick actions or suggestions */}
-          {!hasMessage && !isMobile && !isRecording && !isPlaybackMode && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex gap-2 mt-3 overflow-x-auto pb-1"
-              onClick={() => {
-                openModal({
-                  type: 'message',
-                  content: <TokensModal />
-                });
-              }}
-            >
-              <div className="flex items-center bg-white/10 backdrop-blur-sm px-3 py-1 rounded-2xl">
-                <Coins size={14} className="text-yellow-400 mr-1" />
-                <span className="text-sm text-white font-medium">
-                  {balance || '0'}
-                </span>
+          <div className={'flex items-center mt-3'}>
+            {/* Quick actions or suggestions */}
+            {!isMobile && !messageText && (
+              <div className={'flex items-center ml-2 '}>
+                <div
+                  onClick={() =>
+                    setMessageText("What's your ideal first date like?")
+                  }
+                  className={
+                    'bg-white/10 backdrop-blur-sm px-3 py-1 rounded-2xl'
+                  }
+                >
+                  What's your ideal first date like?
+                </div>
+                <div
+                  onClick={() =>
+                    setMessageText('Tell me about your hobbies and interests')
+                  }
+                  className={
+                    'bg-white/10 backdrop-blur-sm px-3 py-1 rounded-2xl'
+                  }
+                >
+                  Tell me about your hobbies and interests
+                </div>
+                <div
+                  onClick={() => setMessageText('Send me a photo')}
+                  className={
+                    'bg-white/10 backdrop-blur-sm px-3 py-1 rounded-2xl'
+                  }
+                >
+                  Send me a photo
+                </div>
               </div>
-            </motion.div>
-          )}
+            )}
+          </div>
 
           {/* Recording tips */}
           {isRecording && (

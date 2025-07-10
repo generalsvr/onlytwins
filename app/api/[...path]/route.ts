@@ -82,7 +82,6 @@ export async function POST(
     const data = await response.json();
 
     if (!response.ok) {
-      console.log(data.error);
       return NextResponse.json(
         { error: data.error },
         { status: response.status }
@@ -129,7 +128,6 @@ export async function PUT(
     const data = await response.json();
 
     if (!response.ok) {
-      console.log(data.error.details.validation_errors);
       return NextResponse.json(
         { error: data.error },
         { status: response.status }

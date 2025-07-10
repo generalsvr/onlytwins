@@ -108,7 +108,6 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/auth/google/callback') {
     const queryParams = Object.fromEntries(searchParams.entries())
     if(queryParams?.state && queryParams?.code){
-      console.log(queryParams.state, queryParams.code)
       const response = await fetch(`${process.env.NEXT_PUBLIC_HOST_URL}/api/auth/google/exchange`, {
         method: 'POST',
         headers: {
@@ -119,7 +118,6 @@ export async function middleware(request: NextRequest) {
           "state": queryParams.state
         }),
       }).then(res => res.json())
-      console.log(response)
       const newUrl = new URL(`/${defaultLocale}`, request.url)
       const nextResponse = NextResponse.redirect(newUrl)
       if(response?.token){

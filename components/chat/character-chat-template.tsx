@@ -434,6 +434,7 @@ export default function CharacterChatTemplate({
             showOptions={showOptions}
             handleViewProfile={handleViewProfile}
             handleRequestPhoto={handleRequestPhoto}
+            balance={user?.balances.oTT || 0}
           />
           <div ref={messagesContainerRef} className="flex-1 overflow-y-auto">
             <MessageList
