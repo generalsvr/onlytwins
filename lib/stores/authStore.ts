@@ -127,7 +127,6 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const user: UserResponse = await authService.getCurrentUser()
-          console.log(user)
           setUser({
             ...user,
             balances:{

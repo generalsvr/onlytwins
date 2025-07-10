@@ -87,7 +87,7 @@ const ContentCard = ({
   onImageClick,
   isMobile,
   characterName,
-  isPublic=false
+  isPublic = false,
 }: {
   content: PrivateContent;
   onBuy: (content: PrivateContent) => void;
@@ -493,7 +493,7 @@ export default function CharacterProfileTemplate({
   };
 
   const onBack = () => {
-    router.push('/');
+    router.back();
   };
 
   useEffect(() => {
@@ -524,11 +524,14 @@ export default function CharacterProfileTemplate({
           {/* Mobile Header */}
           {isMobile && (
             <div className="relative h-48">
-              <SafeImage
-                src={`${currentCharacter.meta.profileImage}`}
-                alt={`${currentCharacter.name}'s cover`}
-                className="w-full h-full object-cover"
-              />
+              {currentCharacter.meta.backgroundImage && (
+                <img
+                  src={`${currentCharacter.meta.backgroundImage}`}
+                  alt={`${currentCharacter.name}'s cover`}
+                  className="w-full h-full object-cover"
+                />
+              )}
+
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
               <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center">
                 <button
@@ -537,12 +540,6 @@ export default function CharacterProfileTemplate({
                   aria-label="Go back"
                 >
                   <ArrowLeft size={20} />
-                </button>
-                <button
-                  className="bg-black/40 backdrop-blur-sm rounded-full p-3 text-white border border-white/20 hover:bg-black/60 transition-all duration-300"
-                  aria-label="Share profile"
-                >
-                  <Share2 size={20} />
                 </button>
               </div>
             </div>

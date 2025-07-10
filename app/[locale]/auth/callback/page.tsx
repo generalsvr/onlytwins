@@ -27,9 +27,7 @@ export default function TelegramAuthCallback() {
         }
 
         const tgAuthResult = hash.split('tgAuthResult=')[1];
-        console.log(tgAuthResult)
         const parsedHash = JSON.parse(atob(tgAuthResult)) as TelegramAuthData
-        console.log(parsedHash)
         const dataParams = [];
         const fields = [
           'auth_date',
