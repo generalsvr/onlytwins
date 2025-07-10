@@ -13,6 +13,7 @@ import PaymentPage from '@/components/payment-page';
 import PaymentModal from '@/components/modals/payment';
 import TokensModal from '@/components/modals/tokens';
 import { useLocale } from '@/contexts/LanguageContext';
+import FreeTrial from '@/components/modals/trial';
 
 interface HeaderProps {
   title?: string;

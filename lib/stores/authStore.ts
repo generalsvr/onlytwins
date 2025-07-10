@@ -127,8 +127,13 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const user: UserResponse = await authService.getCurrentUser()
-
-          setUser(user);
+          setUser({
+            ...user,
+            balances:{
+              ...user.balances,
+              oTT:Number(user.balances.oTT.toFixed(1))
+            }
+          });
         } catch (error) {
           const authError: AuthError = {
             message: error.response?.data?.detail || error.message || 'Failed to fetch user',

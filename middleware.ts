@@ -38,16 +38,31 @@ async function refreshTokens(request: NextRequest): Promise<NextResponse | null>
       },
       body:JSON.stringify({}),
     })
+    const nextResponse = NextResponse.next()
 
-    if (!response.ok) {
-      return null
+    if (!response.ok && response.status === 401) {
+      nextResponse.cookies.set('access_token', '', {
+        expires: 0,
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      })
+
+      nextResponse.cookies.set('refresh_token', '', {
+        expires: 0,
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      })
+
+      return nextResponse
     }
 
     const data = await response.json()
     const { access_token, refresh_token, expires_in, refresh_expires_in } = data
 
     // Создаем новый response с обновленными куками
-    const nextResponse = NextResponse.next()
+
 
     const accessTokenExpires = new Date(Date.now() + expires_in * 1000)
     const refreshTokenExpires = new Date(Date.now() + refresh_expires_in * 1000)
@@ -89,13 +104,10 @@ function isTokenExpired(token: string, bufferSeconds: number = 60): boolean {
 }
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl
-  const urlObj = new URL(request.nextUrl.pathname, request.nextUrl.origin);
-  console.log(urlObj.toString());
-  console.log(request.nextUrl)
+
   if (pathname === '/auth/google/callback') {
     const queryParams = Object.fromEntries(searchParams.entries())
     if(queryParams?.state && queryParams?.code){
-      console.log(queryParams.state, queryParams.code)
       const response = await fetch(`${process.env.NEXT_PUBLIC_HOST_URL}/api/auth/google/exchange`, {
         method: 'POST',
         headers: {
@@ -106,7 +118,6 @@ export async function middleware(request: NextRequest) {
           "state": queryParams.state
         }),
       }).then(res => res.json())
-      console.log(response)
       const newUrl = new URL(`/${defaultLocale}`, request.url)
       const nextResponse = NextResponse.redirect(newUrl)
       if(response?.token){

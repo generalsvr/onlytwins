@@ -22,8 +22,9 @@ import { usePayment } from '@/lib/hooks/usePayment';
 import { useLoadingStore } from '@/lib/stores/useLoadingStore';
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler';
 import { AxiosError } from 'axios';
-import AudioRecorder from '@/components/chat/audio-recorder';
 import { useVoiceRecording } from '@/lib/hooks/useVoiceRecording';
+import TokensModal from '@/components/modals/tokens';
+import { PURCHASE_MESSAGE, REGISTRATION_MESSAGE } from '@/lib/consts';
 
 interface CharacterChatTemplateProps {
   character: AgentResponse | null;
@@ -36,7 +37,9 @@ export default function CharacterChatTemplate({
   conversationId,
   history,
 }: CharacterChatTemplateProps) {
-  const { isAuthenticated, user } = useAuthStore((state) => state);
+  const { isAuthenticated, user, getCurrentUser } = useAuthStore(
+    (state) => state
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [showOptions, setShowOptions] = useState(false);
@@ -56,6 +59,7 @@ export default function CharacterChatTemplate({
   const setLoading = useLoadingStore((state) => state.setLoading);
   const { locale } = useLocale();
   const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [blob, setBlob] = useState<Blob | null>(null);
   const { purchaseContent } = usePayment(locale);
   const { errorHandler } = useErrorHandler();
   const {
@@ -160,80 +164,6 @@ export default function CharacterChatTemplate({
     scrollToBottom();
   }, [messagesEndRef, isTyping]);
 
-  // Send text message
-  const handleSendMessage = async () => {
-    if (messageText.trim() === '') return;
-    const userMessageId = v4();
-
-    // Добавляем сообщение пользователя локально
-    const newUserMessage: Message = {
-      id: userMessageId,
-      text: messageText,
-      sender: 'user',
-      time: getCurrentTime(),
-    };
-
-    setMessages((prev) => [...prev, newUserMessage]);
-
-    try {
-      setIsTyping(true);
-
-      const chatRequest: ChatRequest = {
-        agentId: character.id,
-        message: messageText,
-        ...(currentConversationId && { conversationId: currentConversationId }),
-      };
-      setMessageText('');
-
-      const response = isAuthenticated
-        ? await chatService.sendMessage(chatRequest)
-        : await chatService.sendPublicMessage(chatRequest);
-
-      if (response?.error && response?.status === 429) {
-        openModal({
-          type: 'message',
-          content: (
-            <AuthModal initialMode="signup" onClose={() => closeModal()} />
-          ),
-        });
-        setIsTyping(false);
-        return;
-      }
-
-      const messageId = v4();
-
-      if (response.message) {
-        const newAgentMessage: Message = {
-          id: messageId,
-          text: response.message,
-          sender: 'agent',
-          time: formatDate(response.timestamp),
-          ...(response?.metadata?.content && {
-            media: response.metadata.content,
-          }),
-          ...(response?.metadata?.audioUrl && {
-            audio: response.metadata.audioUrl,
-          }),
-        };
-
-        setMessages((prev) => [...prev, newAgentMessage]);
-        setIsTyping(false);
-        scrollToBottom();
-      }
-
-      if (response.conversationId && !currentConversationId) {
-        setCurrentConversationId(response.conversationId);
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      openModal({
-        type: 'message',
-        content: <div>Error sending message. Please try again.</div>,
-      });
-      setIsTyping(false);
-    }
-  };
-
   const handleRequestPhoto = () => {
     setShowPaywall(true);
   };
@@ -296,17 +226,17 @@ export default function CharacterChatTemplate({
     stopRecording,
     resetRecording,
     isSupported,
-    error: recordingError
+    error: recordingError,
   } = useVoiceRecording({
     maxDuration: 300, // 5 минут максимум
     onRecordingComplete: handleRecordingComplete,
-    onError: handleRecordingError
+    onError: handleRecordingError,
   });
 
   // Обработка завершения записи
-  function handleRecordingComplete(audioBlob: Blob, audioUrl: string) {
-
+  async function handleRecordingComplete(audioBlob: Blob, audioUrl: string) {
     // Сохраняем URL записи для прослушивания
+    setBlob(audioBlob);
     setRecordedAudioUrl(audioUrl);
 
     // Сохраняем blob для отправки на сервер
@@ -320,39 +250,6 @@ export default function CharacterChatTemplate({
     alert(`Recording error: ${error}`);
   }
 
-  // Отправка аудио на сервер (пример)
-  async function sendAudioToServer(audioBlob: Blob) {
-    try {
-
-
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
-
-      // Замените на ваш API endpoint
-      const response = await fetch('/api/transcribe-audio', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-
-        // Если сервер вернул транскрипцию, можно добавить её как текстовое сообщение
-        if (result.transcription) {
-          const transcriptionMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            text: result.transcription,
-            timestamp: new Date(),
-            type: 'text'
-          };
-          setMessages(prev => [...prev, transcriptionMessage]);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to send audio:', error);
-      handleRecordingError('Failed to send recording to server');
-    }
-  }
   const handleDeleteRecording = () => {
     setRecordedAudioUrl(null);
     resetRecording(); // из хука useVoiceRecording
@@ -370,7 +267,8 @@ export default function CharacterChatTemplate({
   };
   // Отправка текстового сообщения
   const handleSendVoiceMessage = async () => {
-    if (recordedAudioUrl && audioUrl) {
+    if (recordedAudioUrl && audioUrl && blob) {
+      setIsTyping(true);
       const userMessageId = v4();
 
       // Добавляем голосовое сообщение пользователя локально
@@ -378,14 +276,43 @@ export default function CharacterChatTemplate({
         id: userMessageId,
         audio: recordedAudioUrl,
         sender: 'user',
-        time: getCurrentTime()
+        time: getCurrentTime(),
       };
 
       setMessages((prev) => [...prev, newUserMessage]);
 
+      const audioFile = new File([blob], `audio-${v4()}.wav`, {
+        type: 'audio/wav',
+      });
+      const messageId = v4();
       setRecordedAudioUrl(null);
+      setBlob(null);
       resetRecording();
+      const voiceResponse = await chatService.sendVoiceMessage({
+        audioFile,
+        agentId: character?.id,
+        conversationId: conversationId,
+      });
+      if (voiceResponse.message) {
+        const newAgentMessage: Message = {
+          id: messageId,
+          text: voiceResponse.message,
+          sender: 'agent',
+          time: formatDate(voiceResponse.timestamp),
+          ...(voiceResponse?.metadata?.content && {
+            media: voiceResponse.metadata.content,
+          }),
+          ...(voiceResponse?.metadata?.audioUrl && {
+            audio: voiceResponse.metadata.audioUrl,
+          }),
+        };
 
+        setMessages((prev) => [...prev, newAgentMessage]);
+        setIsTyping(false);
+        scrollToBottom();
+      }
+
+      getCurrentUser();
       return;
     }
 
@@ -415,19 +342,47 @@ export default function CharacterChatTemplate({
       const response = isAuthenticated
         ? await chatService.sendMessage(chatRequest)
         : await chatService.sendPublicMessage(chatRequest);
-
-      if (response?.error && response?.status === 429) {
-        openModal({
-          type: 'message',
-          content: (
-            <AuthModal initialMode="signup" onClose={() => closeModal()} />
-          ),
-        });
+      const messageId = v4();
+      if (response?.error && response?.error.details.status_code === 403) {
+        const tokenAgentMessage: Message = {
+          id: messageId,
+          text: REGISTRATION_MESSAGE[
+            Math.floor(Math.random() * REGISTRATION_MESSAGE.length)
+          ],
+          sender: 'agent',
+          time: getCurrentTime(),
+        };
+        setMessages((prev) => [...prev, tokenAgentMessage]);
         setIsTyping(false);
+        setTimeout(() => {
+          openModal({
+            type: 'message',
+            content: (
+              <AuthModal initialMode="signup" onClose={() => closeModal()} />
+            ),
+          });
+        }, 1000);
         return;
       }
-
-      const messageId = v4();
+      if (response?.error && response?.error.details.status_code === 402) {
+        const tokenAgentMessage: Message = {
+          id: messageId,
+          text: PURCHASE_MESSAGE[
+            Math.floor(Math.random() * PURCHASE_MESSAGE.length)
+          ],
+          sender: 'agent',
+          time: getCurrentTime(),
+        };
+        setMessages((prev) => [...prev, tokenAgentMessage]);
+        setIsTyping(false);
+        setTimeout(() => {
+          openModal({
+            type: 'message',
+            content: <TokensModal />,
+          });
+        }, 2000);
+        return;
+      }
 
       if (response.message) {
         const newAgentMessage: Message = {
@@ -443,6 +398,9 @@ export default function CharacterChatTemplate({
         setMessages((prev) => [...prev, newAgentMessage]);
         setIsTyping(false);
         scrollToBottom();
+        if (isAuthenticated) {
+          getCurrentUser();
+        }
       }
 
       if (response.conversationId && !currentConversationId) {
@@ -456,9 +414,7 @@ export default function CharacterChatTemplate({
       });
       setIsTyping(false);
     }
-
   };
-
 
   return (
     <div
@@ -474,6 +430,7 @@ export default function CharacterChatTemplate({
             showOptions={showOptions}
             handleViewProfile={handleViewProfile}
             handleRequestPhoto={handleRequestPhoto}
+            balance={user?.balances.oTT || 0}
           />
           <div ref={messagesContainerRef} className="flex-1 overflow-y-auto">
             <MessageList
@@ -500,7 +457,6 @@ export default function CharacterChatTemplate({
             startRecording={startRecording}
             stopRecording={stopRecording}
             recordingTime={recordingTime}
-            // Новые пропсы для режима прослушивания
             audioUrl={recordedAudioUrl}
             onDeleteRecording={handleDeleteRecording}
             onRetryRecording={handleRetryRecording}

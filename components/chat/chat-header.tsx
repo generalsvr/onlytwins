@@ -8,12 +8,15 @@ import {
   Heart,
   Star,
   Zap,
+  Coins,
 } from 'lucide-react';
 import SafeImage from '@/components/safe-image';
 import { AgentResponse } from '@/lib/types/agents';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import TokensModal from '@/components/modals/tokens';
+import { useModalStore } from '@/lib/stores/modalStore';
 
 interface ChatHeaderProps {
   character: AgentResponse;
@@ -23,6 +26,7 @@ interface ChatHeaderProps {
   showOptions: boolean;
   handleViewProfile: () => void;
   handleRequestPhoto: () => void;
+  balance: number;
 }
 
 export default function ChatHeader({
@@ -33,11 +37,13 @@ export default function ChatHeader({
   showOptions,
   handleViewProfile,
   handleRequestPhoto,
+  balance,
 }: ChatHeaderProps) {
   const [isOnline] = useState(true);
   const [lastSeen] = useState('Active now');
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
-  const router = useRouter()
+  const router = useRouter();
+  const openModal = useModalStore((state) => state.openModal);
 
   const actionButtons = [
     {
@@ -79,91 +85,54 @@ export default function ChatHeader({
       className={`absolute absolute-center-x-top z-50 w-[75%] ${isMobile && 'w-[95%]'}`}
     >
       {/* Main Header */}
-      <header className="relative flex items-center p-2 sm:p-3 backdrop-blur-md bg-gradient-to-b from-zinc-900/80 via-zinc-900/40 to-transparent w-full border border-zinc-700/30 rounded-2xl">
+      <header className="flex items-center p-3 backdrop-blur-md bg-gradient-to-b from-zinc-900/80 via-zinc-900/40 to-transparent w-full border border-zinc-700/30 rounded-2xl">
         <div className="flex items-center w-full min-w-0">
-          {/* Back button */}
-          <button
-            className="flex-shrink-0 mr-2 sm:mr-3 p-2 sm:p-3 rounded-xl bg-zinc-700/80 hover:bg-zinc-600/80 text-zinc-300 hover:text-white border border-zinc-600/30 cursor-pointer transition-all duration-200"
-            onClick={onBack}
-          >
-            <ArrowLeft size={isMobile ? 16 : 20} className="text-zinc-300" />
+          <button onClick={() => router.back()} className="flex-shrink-0 mr-3 p-2 rounded-xl bg-zinc-700/80 hover:bg-zinc-600/80 text-zinc-300 transition-all duration-200">
+            <ArrowLeft size={18} />
           </button>
 
-          {/* Profile section */}
-          <div
-            className="flex items-center flex-1 min-w-0 cursor-pointer group"
-            onClick={handleViewProfile}
-          >
+          <div className="flex items-center flex-1 min-w-0 cursor-pointer group">
             <div className="flex-shrink-0 relative">
-              <div className="relative w-12 h-12  rounded-full overflow-hidden ring-2 ring-pink-500/30 group-hover:ring-pink-500/50 transition-all duration-300">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-pink-500/30 group-hover:ring-pink-500/50 transition-all duration-300">
                 <img
-                  src={character.meta.profileImage || ''}
+                  src={character.meta.profileImage}
                   alt={character.name}
                   className="w-full h-full object-cover"
                 />
               </div>
             </div>
 
-            <div className="ml-2 sm:ml-3 flex-1 min-w-0">
-              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-                <h2 onClick={() => router.push(`/character/${character.id}`)} className="font-semibold text-white text-sm sm:text-base lg:text-lg truncate group-hover:text-pink-300 transition-colors min-w-0 flex-1">
-                  {character.name}
-                </h2>
-                {/*<Star*/}
-                {/*  size={12}*/}
-                {/*  className="text-yellow-400 flex-shrink-0 sm:w-4 sm:h-4"*/}
-                {/*/>*/}
-              </div>
-              <div className="flex items-center space-x-2">
-                {/* Дополнительная информация может быть добавлена здесь */}
+            <div className="ml-3 flex-1 min-w-0">
+              <h2 onClick={() => router.push(`/character/${character.id}`)} className="font-semibold text-white text-base truncate group-hover:text-pink-300 transition-colors">
+                {character.name}
+              </h2>
+              <div className="flex items-center space-x-2 text-xs text-zinc-400 mt-1">
+                <span className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-1.5" />
+                  Active now
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Action buttons */}
-          {/*<div className="flex-shrink-0 ml-2 sm:ml-4">*/}
-          {/*  {isMobile ? (*/}
-          {/*    <button*/}
-          {/*      onClick={toggleOptions}*/}
-          {/*      className="p-2 rounded-full hover:bg-zinc-700/50 transition-colors relative"*/}
-          {/*    >*/}
-          {/*      <MoreHorizontal size={18} className="text-zinc-300" />*/}
-          {/*      {showOptions && (*/}
-          {/*        <div className="absolute top-1 right-1 w-2 h-2 bg-pink-500 rounded-full animate-pulse" />*/}
-          {/*      )}*/}
-          {/*    </button>*/}
-          {/*  ) : (*/}
-          {/*    <div className="hidden sm:flex items-center space-x-1 lg:space-x-2">*/}
-          {/*      {actionButtons.map((button) => (*/}
-          {/*        <div key={button.id} className="relative">*/}
-          {/*          <button*/}
-          {/*            className={`*/}
-          {/*              p-1.5 sm:p-2 lg:p-2.5 rounded-xl transition-all duration-200 backdrop-blur-sm*/}
-          {/*              ${button.bgColor} ${button.color}*/}
-          {/*              hover:scale-105 active:scale-95*/}
-          {/*            `}*/}
-          {/*            onClick={button.action}*/}
-          {/*            onMouseEnter={() => setShowTooltip(button.id)}*/}
-          {/*            onMouseLeave={() => setShowTooltip(null)}*/}
-          {/*          >*/}
-          {/*            <button.icon*/}
-          {/*              size={16}*/}
-          {/*              className="sm:w-4 sm:h-4 lg:w-5 lg:h-5"*/}
-          {/*            />*/}
-          {/*          </button>*/}
-
-          {/*          /!* Tooltip *!/*/}
-          {/*          {showTooltip === button.id && (*/}
-          {/*            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900/95 backdrop-blur-sm text-white text-xs rounded-lg shadow-lg border border-zinc-700/50 whitespace-nowrap z-50 animate-in fade-in-0 zoom-in-95 duration-200">*/}
-          {/*              {button.label}*/}
-          {/*              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-zinc-900" />*/}
-          {/*            </div>*/}
-          {/*          )}*/}
-          {/*        </div>*/}
-          {/*      ))}*/}
-          {/*    </div>*/}
-          {/*  )}*/}
-          {/*</div>*/}
+          <div className="flex-shrink-0 ml-4">
+            <button
+              onClick={() => {
+                openModal({
+                  content: <TokensModal />,
+                });
+              }}
+              className="flex items-center px-3 py-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 hover:from-yellow-500/30 hover:to-amber-500/30 rounded-xl border border-yellow-500/30 transition-all duration-200 group/balance"
+            >
+              <Coins
+                size={14}
+                className="text-yellow-400 mr-2 group-hover/balance:scale-110 transition-transform"
+              />
+              <span className="text-sm text-yellow-300 font-medium">
+                {balance.toLocaleString()}
+              </span>
+            </button>
+          </div>
         </div>
       </header>
 

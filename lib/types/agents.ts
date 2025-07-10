@@ -41,6 +41,7 @@ interface Meta {
   physicalDescription?: string;
   publicContent?: PublicContent[]; // Adjust type based on actual content structure if known
   privateContent?: PrivateContent[];
+  backgroundImage?: string
 }
 
 export interface AgentResponse {

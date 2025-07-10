@@ -1,21 +1,23 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, MessageCircle, Clock, Star, Loader2 } from 'lucide-react';
+import { Search, Filter, MessageCircle, Clock, Star, Loader2, Crown } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConversationSummary } from '@/lib/types/chat';
 import { useConversations } from '@/lib/hooks/useConversations';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useLocale } from '@/contexts/LanguageContext';
+import { GlobalSubscription, UserSubscriptionResponse } from '@/lib/types/billing';
 
 interface ChatPageProps {
   initialConversations: ConversationSummary[] | null;
   error: Error | null;
   pageSize?: number;
+  userSubscription: GlobalSubscription | null
 }
 
-export default function ChatPage({ initialConversations, error: initialError, pageSize = 1 }: ChatPageProps) {
+export default function ChatPage({ initialConversations, userSubscription, error: initialError, pageSize = 1 }: ChatPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(true);
@@ -23,7 +25,6 @@ export default function ChatPage({ initialConversations, error: initialError, pa
   const router = useRouter();
   const user = useAuthStore(state => state.user);
   const { dictionary } = useLocale();
-
 
   const {
     conversations,
@@ -65,7 +66,7 @@ export default function ChatPage({ initialConversations, error: initialError, pa
       {/* Header with backdrop blur */}
       <div className="top-0 z-50">
         {/* Backdrop blur overlay */}
-        <div className={`absolute inset-0 ${isMobile && "bg-zinc-800/60 backdrop-blur-xl  border border-zinc-700/30 shadow-2xl"}`} />
+
 
         <div className="relative p-4">
           <div className="max-w-4xl mx-auto ">
@@ -147,8 +148,29 @@ export default function ChatPage({ initialConversations, error: initialError, pa
           </div>
         )}
 
-        {/* Empty State */}
-        {!displayError && conversations && conversations.length === 0 && (
+        {/* Empty State - No Subscription */}
+        {!displayError && conversations && conversations.length === 0 && userSubscription === null && (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-gradient-to-br from-yellow-500/20 to-amber-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-yellow-500/30">
+              <Crown size={40} className="text-yellow-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">
+              Upgrade to Save Your Conversations
+            </h3>
+            <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+              Purchase a subscription to save your messages with AI models and access your conversation history anytime.
+            </p>
+            <button
+              onClick={() => router.push('/profile/subscription')}
+              className="px-8 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-xl hover:from-yellow-600 hover:to-amber-700 transition-colors font-medium shadow-lg shadow-yellow-500/25 cursor-pointer"
+            >
+              Get Subscription
+            </button>
+          </div>
+        )}
+
+        {/* Empty State - With Subscription */}
+        {!displayError && conversations && conversations.length === 0 && userSubscription !== null && (
           <div className="text-center py-12">
             <div className="w-20 h-20 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
               <MessageCircle size={40} className="text-zinc-400" />
@@ -239,8 +261,7 @@ export default function ChatPage({ initialConversations, error: initialError, pa
                   </div>
                 </div>
 
-                {/* Hover effect overlay */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
+
               </div>
             ))}
 

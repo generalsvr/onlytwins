@@ -53,25 +53,33 @@ export async function POST(
   const resolvedParams = await params;
   const path = resolvedParams.path.join('/');
   const url = `${EXTERNAL_API_URL}/${path}`;
-  const body = await request.json();
   const authToken = request.headers.get('Authorization');
-  const isServerAction = request.headers.get('ServerAction') === 'true';
-  console.log(body)
+
+  const isFormData = request.headers
+    .get('Content-Type')
+    ?.includes('multipart/form-data');
+  let body = null;
+
+  if (isFormData) {
+    body = await request.formData();
+  } else {
+    body = await request.json();
+  }
+
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         ...(authToken && { Authorization: authToken }),
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        ...(!isFormData && { 'Content-Type': 'application/json' }),
+        ...(!isFormData && { Accept: 'application/json' }),
       },
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.log(data.error)
       return NextResponse.json(
         { error: data.error },
         { status: response.status }
@@ -102,7 +110,7 @@ export async function PUT(
   const body = await request.json();
   const telegramAuth = request.headers.get('AuthorizationTelegram');
   const authToken = request.headers.get('Authorization');
-  console.log(telegramAuth);
+
   try {
     const response = await fetch(url, {
       method: 'PUT',
@@ -118,7 +126,6 @@ export async function PUT(
     const data = await response.json();
 
     if (!response.ok) {
-      console.log(data.error.details.validation_errors);
       return NextResponse.json(
         { error: data.error },
         { status: response.status }

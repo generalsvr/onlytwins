@@ -22,7 +22,9 @@ import {
   Pause,
   User,
   Grid,
-  Square, ChevronRight, ChevronLeft,
+  Square,
+  ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -137,6 +139,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
 
   // Get images for current selected agent
   const currentImages = useMemo(() => {
+    console.log(selectedAgent);
     if (!selectedAgent) return [];
 
     const images = [];
@@ -145,10 +148,10 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
     if (selectedAgent.meta.profileImage) {
       images.push(selectedAgent.meta.profileImage);
     }
-
+    let publicContent = [...selectedAgent.meta.publicContent];
     // Add images from public content
-    if (selectedAgent.meta.publicContent) {
-      selectedAgent.meta.publicContent.forEach((item) => {
+    if (publicContent) {
+      publicContent.splice(0, 7).forEach((item) => {
         if (item.mimeType?.startsWith('image/')) {
           images.push(item.url);
         }
@@ -176,7 +179,11 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
   }, [currentAgentIndex, isTransitioning]);
 
   const goToNextAgent = useCallback(() => {
-    if (swiperRef.current && currentAgentIndex < agents.length - 1 && !isTransitioning) {
+    if (
+      swiperRef.current &&
+      currentAgentIndex < agents.length - 1 &&
+      !isTransitioning
+    ) {
       setIsTransitioning(true);
       swiperRef.current.slideNext();
     }
@@ -404,55 +411,64 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
   }, []);
 
   // Mouse drag handlers for slide navigation
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (isTransitioning) return;
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (isTransitioning) return;
 
-    setIsDragging(true);
-    setDragStartY(e.clientY);
-    setDragCurrentY(e.clientY);
+      setIsDragging(true);
+      setDragStartY(e.clientY);
+      setDragCurrentY(e.clientY);
 
-    // Prevent default to avoid text selection
-    e.preventDefault();
-  }, [isTransitioning]);
+      // Prevent default to avoid text selection
+      e.preventDefault();
+    },
+    [isTransitioning]
+  );
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || isTransitioning) return;
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || isTransitioning) return;
 
-    setDragCurrentY(e.clientY);
+      setDragCurrentY(e.clientY);
 
-    // Add visual feedback by changing cursor
-    if (containerRef.current) {
-      containerRef.current.style.cursor = 'grabbing';
-    }
-  }, [isDragging, isTransitioning]);
-
-  const handleMouseUp = useCallback((e: MouseEvent) => {
-    if (!isDragging || isTransitioning) return;
-
-    const deltaY = e.clientY - dragStartY;
-    const threshold = 80; // Minimum drag distance to trigger slide change
-
-    // Reset cursor
-    if (containerRef.current) {
-      containerRef.current.style.cursor = 'grab';
-    }
-
-    // Determine slide direction based on drag distance
-    if (Math.abs(deltaY) > threshold) {
-      if (deltaY > 0) {
-        // Dragged down - go to previous slide
-        goToPreviousAgent();
-      } else {
-        // Dragged up - go to next slide
-        goToNextAgent();
+      // Add visual feedback by changing cursor
+      if (containerRef.current) {
+        containerRef.current.style.cursor = 'grabbing';
       }
-    }
+    },
+    [isDragging, isTransitioning]
+  );
 
-    // Reset drag state
-    setIsDragging(false);
-    setDragStartY(0);
-    setDragCurrentY(0);
-  }, [isDragging, isTransitioning, dragStartY, goToPreviousAgent, goToNextAgent]);
+  const handleMouseUp = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || isTransitioning) return;
+
+      const deltaY = e.clientY - dragStartY;
+      const threshold = 80; // Minimum drag distance to trigger slide change
+
+      // Reset cursor
+      if (containerRef.current) {
+        containerRef.current.style.cursor = 'grab';
+      }
+
+      // Determine slide direction based on drag distance
+      if (Math.abs(deltaY) > threshold) {
+        if (deltaY > 0) {
+          // Dragged down - go to previous slide
+          goToPreviousAgent();
+        } else {
+          // Dragged up - go to next slide
+          goToNextAgent();
+        }
+      }
+
+      // Reset drag state
+      setIsDragging(false);
+      setDragStartY(0);
+      setDragCurrentY(0);
+    },
+    [isDragging, isTransitioning, dragStartY, goToPreviousAgent, goToNextAgent]
+  );
 
   const handleMouseLeave = useCallback(() => {
     if (isDragging) {
@@ -476,7 +492,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
       // If switching to desktop, reset and reinitialize Swiper
       if (!isMobile) {
         // Force Swiper remount by changing key
-        setSwiperKey(prev => prev + 1);
+        setSwiperKey((prev) => prev + 1);
 
         // Reset states
         setCurrentImageIndex(0);
@@ -620,7 +636,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
   if (isMobile) {
     return <AgentCard agents={agents} />;
   }
-
+  console.log(currentImages);
   return (
     <div className="text-white h-screen overflow-hidden">
       {/* Main Content */}
@@ -630,7 +646,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
         className="relative h-full select-none"
         style={{
           cursor: isDragging ? 'grabbing' : 'grab',
-          userSelect: 'none'
+          userSelect: 'none',
         }}
       >
         {/* Swiper Container */}
@@ -668,7 +684,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
           className="h-full"
         >
           {agents.map((agent, index) => {
-            return(
+            return (
               <SwiperSlide key={agent.id} className="h-[80%]">
                 <div className="max-w-7xl mx-auto px-6 h-[80%] flex items-center">
                   <div className="w-full flex gap-5 h-full">
@@ -686,7 +702,9 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                             whileTap={{ scale: 0.9 }}
                             onClick={goToPreviousAgent}
                             className="p-4 rounded-full bg-black/70 backdrop-blur-sm border border-gray-700 hover:bg-black/80 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label={t.actions?.previousAgent || 'Previous Agent'}
+                            aria-label={
+                              t.actions?.previousAgent || 'Previous Agent'
+                            }
                           >
                             <ChevronUp
                               size={20}
@@ -758,27 +776,26 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                             )}
 
                             {/* Video Overlay */}
-                            {currentVideoUrl && !videoError.has(currentVideoKey || '') && (
-                              <div
-                                className={`absolute inset-0 transition-opacity duration-500 ${showVideo && isPlaying ? 'opacity-100' : 'opacity-0'}`}
-                              >
-                                <video
-                                  ref={currentVideoRef}
-                                  className="w-full h-full object-cover"
-                                  playsInline
-                                  muted={isMuted}
-                                  loop
-                                  onPlay={() => setIsPlaying(true)}
-                                  onPause={() => setIsPlaying(false)}
-                                />
-                              </div>
-                            )}
+                            {currentVideoUrl &&
+                              !videoError.has(currentVideoKey || '') && (
+                                <div
+                                  className={`absolute inset-0 transition-opacity duration-500 ${showVideo && isPlaying ? 'opacity-100' : 'opacity-0'}`}
+                                >
+                                  <video
+                                    ref={currentVideoRef}
+                                    className="w-full h-full object-cover"
+                                    playsInline
+                                    muted={isMuted}
+                                    loop
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
+                                  />
+                                </div>
+                              )}
 
                             {/* Gradient Overlays */}
-                            <div
-                              className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-                            <div
-                              className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/40" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/40" />
 
                             {/* Media Controls */}
                             <motion.div
@@ -789,46 +806,61 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                               transition={{ delay: 0.3, duration: 0.3 }}
                               className="absolute top-6 right-6 flex items-center space-x-3 z-20"
                             >
-                              {currentVideoUrl && !videoError.has(currentVideoKey || '') && (
-                                <div className="flex items-center space-x-2">
-                                  <motion.button
-                                    whileTap={{ scale: 0.8 }}
-                                    onClick={togglePlayPause}
-                                    className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-all"
-                                    aria-label={
-                                      isPlaying
-                                        ? t.actions?.pauseVideo || 'Pause Video'
-                                        : t.actions?.playVideo || 'Play Video'
-                                    }
-                                  >
-                                    {isPlaying ? (
-                                      <Pause size={20} className="text-white" />
-                                    ) : (
-                                      <Play size={20} className="text-white ml-1" />
-                                    )}
-                                  </motion.button>
-
-                                  {isPlaying && (
+                              {currentVideoUrl &&
+                                !videoError.has(currentVideoKey || '') && (
+                                  <div className="flex items-center space-x-2">
                                     <motion.button
                                       whileTap={{ scale: 0.8 }}
-                                      onClick={toggleMute}
+                                      onClick={togglePlayPause}
                                       className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-all"
                                       aria-label={
-                                        isMuted
-                                          ? t.actions?.unmuteVideo || 'Unmute Video'
-                                          : t.actions?.muteVideo || 'Mute Video'
+                                        isPlaying
+                                          ? t.actions?.pauseVideo ||
+                                            'Pause Video'
+                                          : t.actions?.playVideo || 'Play Video'
                                       }
                                     >
-                                      {isMuted ? (
-                                        <VolumeX size={20} className="text-white" />
+                                      {isPlaying ? (
+                                        <Pause
+                                          size={20}
+                                          className="text-white"
+                                        />
                                       ) : (
-                                        <Volume2 size={20} className="text-white" />
+                                        <Play
+                                          size={20}
+                                          className="text-white ml-1"
+                                        />
                                       )}
                                     </motion.button>
-                                  )}
-                                </div>
-                              )}
 
+                                    {isPlaying && (
+                                      <motion.button
+                                        whileTap={{ scale: 0.8 }}
+                                        onClick={toggleMute}
+                                        className="p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-all"
+                                        aria-label={
+                                          isMuted
+                                            ? t.actions?.unmuteVideo ||
+                                              'Unmute Video'
+                                            : t.actions?.muteVideo ||
+                                              'Mute Video'
+                                        }
+                                      >
+                                        {isMuted ? (
+                                          <VolumeX
+                                            size={20}
+                                            className="text-white"
+                                          />
+                                        ) : (
+                                          <Volume2
+                                            size={20}
+                                            className="text-white"
+                                          />
+                                        )}
+                                      </motion.button>
+                                    )}
+                                  </div>
+                                )}
                             </motion.div>
 
                             {/* Image Navigation */}
@@ -842,12 +874,17 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                               >
                                 <div
                                   className="absolute top-6 left-6 flex space-x-2 z-20"
-                                  aria-label={t.labels?.imageNavigation || 'Image Navigation'}
+                                  aria-label={
+                                    t.labels?.imageNavigation ||
+                                    'Image Navigation'
+                                  }
                                 >
                                   {currentImages.map((_, imageIndex) => (
                                     <button
                                       key={imageIndex}
-                                      onClick={() => setCurrentImageIndex(imageIndex)}
+                                      onClick={() =>
+                                        setCurrentImageIndex(imageIndex)
+                                      }
                                       className={`w-10 h-1 rounded-full transition-all ${
                                         imageIndex === currentImageIndex
                                           ? 'bg-white'
@@ -860,9 +897,14 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
 
                                 {currentImageIndex > 0 && (
                                   <button
-                                    onClick={() => setCurrentImageIndex((prev) => prev - 1)}
+                                    onClick={() =>
+                                      setCurrentImageIndex((prev) => prev - 1)
+                                    }
                                     className="absolute left-6 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-all"
-                                    aria-label={t.actions?.previousImage || 'Previous Image'}
+                                    aria-label={
+                                      t.actions?.previousImage ||
+                                      'Previous Image'
+                                    }
                                   >
                                     <ChevronLeft
                                       size={20}
@@ -871,11 +913,16 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                                   </button>
                                 )}
 
-                                {currentImageIndex < currentImages.length - 1 && (
+                                {currentImageIndex <
+                                  currentImages.length - 1 && (
                                   <button
-                                    onClick={() => setCurrentImageIndex((prev) => prev + 1)}
+                                    onClick={() =>
+                                      setCurrentImageIndex((prev) => prev + 1)
+                                    }
                                     className="absolute right-6 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-all"
-                                    aria-label={t.actions?.nextImage || 'Next Image'}
+                                    aria-label={
+                                      t.actions?.nextImage || 'Next Image'
+                                    }
                                   >
                                     <ChevronRight
                                       size={20}
@@ -904,8 +951,8 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                                     <div className="flex items-center space-x-1">
                                       <Calendar size={16} />
                                       <span>
-                                      {getAgeText(agent.meta.age, locale)}
-                                    </span>
+                                        {getAgeText(agent.meta.age, locale)}
+                                      </span>
                                     </div>
                                     <span>•</span>
                                     <span>{agent.meta.occupation}</span>
@@ -933,7 +980,10 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                                     }
                                     className="flex items-center  md:text-sm md:px-5 lg:px-8 lg:text-[16px] py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-pink-500/25 "
                                   >
-                                    <MessageCircle size={18} className="inline mr-2" />
+                                    <MessageCircle
+                                      size={18}
+                                      className="inline mr-2"
+                                    />
                                     {t.actions?.startChat || 'Chat with me'}
                                   </motion.button>
 
@@ -941,12 +991,15 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() =>
-                                      router.push(`/${locale}/character/${agent.id}`)
+                                      router.push(
+                                        `/${locale}/character/${agent.id}`
+                                      )
                                     }
                                     className="flex items-center md:text-sm md:px-5 lg:px-6 lg:text-[16px]  py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all duration-200  "
                                   >
                                     <User size={18} className="inline mr-2" />
-                                    {t.actions?.viewProfile || 'View full profile'}
+                                    {t.actions?.viewProfile ||
+                                      'View full profile'}
                                   </motion.button>
                                 </div>
                               </div>
@@ -984,8 +1037,8 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                                     <div className="flex items-center space-x-2">
                                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                                       <span className="text-sm text-green-400">
-                                      {t.common?.online || 'Online'}
-                                    </span>
+                                        {t.common?.online || 'Online'}
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
@@ -995,7 +1048,10 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                               {agent.description && (
                                 <div>
                                   <h4 className="text-white font-semibold mb-3 flex items-center">
-                                    <Sparkles size={16} className="text-pink-400 mr-2" />
+                                    <Sparkles
+                                      size={16}
+                                      className="text-pink-400 mr-2"
+                                    />
                                     {t.common?.about || 'About'}
                                   </h4>
                                   <p className="text-white/80 leading-relaxed">
@@ -1013,8 +1069,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                                 <div className="space-y-3">
                                   {agent.meta.occupation && (
                                     <div className="flex items-center space-x-3">
-                                      <div
-                                        className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                      <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
                                         <span className="text-sm">💼</span>
                                       </div>
                                       <div>
@@ -1030,7 +1085,10 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
 
                                   <div className="flex items-center space-x-3">
                                     <div className="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center">
-                                      <Calendar size={14} className="text-pink-400" />
+                                      <Calendar
+                                        size={14}
+                                        className="text-pink-400"
+                                      />
                                     </div>
                                     <div>
                                       <p className="text-white/60 text-sm">
@@ -1058,9 +1116,11 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
 
                                   {agent.meta.location && (
                                     <div className="flex items-center space-x-3">
-                                      <div
-                                        className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                                        <MapPin size={14} className="text-green-400" />
+                                      <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                                        <MapPin
+                                          size={14}
+                                          className="text-green-400"
+                                        />
                                       </div>
                                       <div>
                                         <p className="text-white/60 text-sm">
@@ -1079,9 +1139,10 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                               {isVideoLoading && (
                                 <div className="flex items-center justify-center p-4">
                                   <div className="flex items-center space-x-2 text-white/60">
-                                    <div
-                                      className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-                                    <span>{t.common?.loading || 'Loading'}</span>
+                                    <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                                    <span>
+                                      {t.common?.loading || 'Loading'}
+                                    </span>
                                   </div>
                                 </div>
                               )}
@@ -1093,7 +1154,7 @@ export default function DesktopAgentFeed({ agents }: DesktopAgentFeedProps) {
                   </div>
                 </div>
               </SwiperSlide>
-            )
+            );
           })}
         </Swiper>
 

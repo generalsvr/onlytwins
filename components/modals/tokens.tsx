@@ -49,75 +49,98 @@ export default function TokensModal() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const tokenPackages: TokenPackage[] = useMemo(
-    () => [
-      {
-        id: 1,
-        bonus: 'Starter Pack',
-        effectiveTokens: 100,
-        price: 9.99,
-        baseTokens: 100,
-        costPerToken: 0.0999,
-        image: '💰',
-        discount: '0%',
-      },
-      {
-        id: 2,
-        bonus: 'Value Pack',
-        effectiveTokens: 350,
-        price: 29.99,
-        baseTokens: 350,
-        costPerToken: 0.0857,
-        image: '💎',
-        discount: '14%',
-        savings: 5.0,
-      },
-      {
-        id: 3,
-        bonus: '+10% Bonus',
-        effectiveTokens: 550,
-        price: 49.99,
-        baseTokens: 500,
-        costPerToken: 0.0909,
-        image: '🎁',
-        discount: '20%',
-        savings: 12.5,
-      },
-      {
-        id: 4,
-        bonus: '+15% Bonus',
-        effectiveTokens: 1150,
-        price: 99.99,
-        baseTokens: 1000,
-        costPerToken: 0.0869,
-        image: '👑',
-        popular: true,
-        discount: '25%',
-        savings: 33.33,
-      },
-      {
-        id: 5,
-        bonus: '+20% Bonus',
-        effectiveTokens: 2400,
-        price: 199.99,
-        baseTokens: 2000,
-        costPerToken: 0.0833,
-        image: '🏆',
-        discount: '30%',
-        savings: 85.71,
-      },
-      {
-        id: 6,
-        bonus: '+25% Bonus',
-        effectiveTokens: 3750,
-        price: 299.99,
-        baseTokens: 3000,
-        costPerToken: 0.0799,
-        image: '⭐',
-        discount: '35%',
-        savings: 161.54,
-      },
-    ],
-    []
+    () => {
+      const basePackages: TokenPackage[] = [
+        {
+          id: 1,
+          bonus: 'Starter Pack',
+          effectiveTokens: 100,
+          price: 9.99,
+          baseTokens: 100,
+          costPerToken: 0.0999,
+          image: '💰',
+          discount: '0%',
+        },
+        {
+          id: 2,
+          bonus: 'Value Pack',
+          effectiveTokens: 350,
+          price: 29.99,
+          baseTokens: 350,
+          costPerToken: 0.0857,
+          image: '💎',
+          discount: '14%',
+          savings: 5.0,
+        },
+        {
+          id: 3,
+          bonus: '+10% Bonus',
+          effectiveTokens: 550,
+          price: 49.99,
+          baseTokens: 500,
+          costPerToken: 0.0909,
+          image: '🎁',
+          discount: '20%',
+          savings: 12.5,
+        },
+        {
+          id: 4,
+          bonus: '+15% Bonus',
+          effectiveTokens: 1150,
+          price: 99.99,
+          baseTokens: 1000,
+          costPerToken: 0.0869,
+          image: '👑',
+          popular: true,
+          discount: '25%',
+          savings: 33.33,
+        },
+        {
+          id: 5,
+          bonus: '+20% Bonus',
+          effectiveTokens: 2400,
+          price: 199.99,
+          baseTokens: 2000,
+          costPerToken: 0.0833,
+          image: '🏆',
+          discount: '30%',
+          savings: 85.71,
+        },
+        {
+          id: 6,
+          bonus: '+25% Bonus',
+          effectiveTokens: 3750,
+          price: 299.99,
+          baseTokens: 3000,
+          costPerToken: 0.0799,
+          image: '⭐',
+          discount: '35%',
+          savings: 161.54,
+        },
+      ];
+
+      // Add trial package if user is on trial
+      if (user?.trial === true) {
+        const trialPackage: TokenPackage[] = [
+          {
+            id: 0,
+            bonus: 'Trial Special',
+            effectiveTokens: 49,
+            price: 1.00,
+            baseTokens: 49,
+            costPerToken: 0.0204,
+            image: '🚀',
+            trial: true,
+            discount: '95%',
+            savings: 3.99,
+          },
+        ];
+        return [...trialPackage, ...basePackages];
+      }
+
+      return basePackages;
+    },
+    [user?.trial]
   );
 
   const handlePackageSelect = useCallback((pkg: TokenPackage) => {
@@ -201,7 +224,7 @@ export default function TokensModal() {
               x: { type: 'spring', stiffness: 300, damping: 30 },
               opacity: { duration: 0.2 },
             }}
-            className="grid gap-4 p-4 md:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-4 p-4 md:grid-cols-2 lg:grid-cols-4"
           >
             {tokenPackages.map((pkg, index) => (
               <motion.button

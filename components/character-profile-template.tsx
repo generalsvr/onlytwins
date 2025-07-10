@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   MessageCircle,
@@ -12,6 +12,10 @@ import {
   Target,
   ThumbsDown,
   ThumbsUp,
+  Play,
+  Lock,
+  Sparkles,
+  Star,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SafeImage from './safe-image';
@@ -27,6 +31,7 @@ import { useLocale } from '@/contexts/LanguageContext';
 import { useAgent } from '@/lib/hooks/useAgent';
 import { Character } from '@/lib/types/characters';
 import { useLoadingStore } from '@/lib/stores/useLoadingStore';
+import InsufficientTokens from '@/components/modals/insufficient-tokens';
 
 interface CharacterMedia {
   type: 'image' | 'video';
@@ -74,6 +79,190 @@ export interface CharacterProfileData {
 interface CharacterProfileTemplateProps {
   character: AgentResponse | null;
 }
+
+// Premium Content Card Component
+const ContentCard = ({
+  content,
+  onBuy,
+  onImageClick,
+  isMobile,
+  characterName,
+  isPublic = false,
+}: {
+  content: PrivateContent;
+  onBuy: (content: PrivateContent) => void;
+  onImageClick: (src: string, alt: string) => void;
+  isMobile: boolean;
+  characterName: string;
+  isPublic: boolean;
+}) => {
+  const isVideo = content.mimeType.includes('video');
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const videoRef = useRef(null);
+  // Обработчик выхода из полноэкранного режима
+  const handleFullscreenChange = () => {
+    const isFullscreen = !!(
+      document.fullscreenElement ||
+      document?.webkitFullscreenElement ||
+      document?.msFullscreenElement
+    );
+
+    // Если вышли из полноэкранного режима, ставим видео на паузу
+    if (!isFullscreen && videoRef.current) {
+      videoRef.current.pause();
+    }
+  };
+
+  useEffect(() => {
+    // Добавляем обработчики событий
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      // Удаляем обработчики при размонтировании
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener(
+        'webkitfullscreenchange',
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        'msfullscreenchange',
+        handleFullscreenChange
+      );
+    };
+  }, []);
+  if (content.purchased || isPublic) {
+    return (
+      <div className="relative rounded-2xl overflow-hidden group cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+        <div className="aspect-[4/5] relative">
+          {isVideo ? (
+            <video
+              ref={videoRef}
+              src={content.url}
+              className="w-full h-full object-fit"
+              controls={false}
+              preload="metadata"
+            />
+          ) : (
+            <img
+              src={content.url}
+              alt={`Premium content ${content.id}`}
+              className="w-full h-full object-cover"
+              width={isMobile ? 150 : 300}
+              height={isMobile ? 190 : 380}
+              onClick={() =>
+                onImageClick(content.url, `${characterName}'s premium content`)
+              }
+              onLoad={() => setImageLoaded(true)}
+            />
+          )}
+
+          {/* Purchased Badge */}
+          <div className="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg flex items-center gap-1">
+            <Star className="w-3 h-3" />
+            {isPublic ? 'Public' : 'Owned'}
+          </div>
+
+          {/* Play button for videos */}
+          {isVideo && (
+            <div
+              onClick={async () => {
+                if (videoRef.current.requestFullscreen) {
+                  await videoRef.current.requestFullscreen();
+                } else if (videoRef.current.webkitRequestFullscreen) {
+                  await videoRef.current.webkitRequestFullscreen();
+                } else if (videoRef.current.msRequestFullscreen) {
+                  await videoRef.current.msRequestFullscreen();
+                }
+                await videoRef.current.play();
+              }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <div className="bg-black/40 backdrop-blur-sm rounded-full p-4 border border-white/20">
+                <Play className="w-8 h-8 text-white ml-1" fill="white" />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden group cursor-pointer transform transition-all duration-300 hover:scale-[1.02] ">
+      <div className="aspect-[4/5] relative">
+        {/* Blurred background */}
+        <SafeImage
+          src={content.url}
+          alt={`Premium content ${content.id}`}
+          className="w-full h-full object-cover filter blur-md scale-110"
+          width={isMobile ? 150 : 300}
+          height={isMobile ? 190 : 380}
+          onLoad={() => setImageLoaded(true)}
+        />
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30" />
+
+        {/* Content type indicator */}
+        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium border border-white/20 flex items-center gap-1">
+          {isVideo ? (
+            <>
+              <Play className="w-3 h-3" />
+              Video
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-3 h-3" />
+              Photo
+            </>
+          )}
+        </div>
+
+        {/* Premium badge */}
+        <div className="absolute top-3 right-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg flex items-center gap-1">
+          <Sparkles className="w-4 h-4" />
+          {content.price}
+        </div>
+
+        {/* Play button for locked videos */}
+        {isVideo && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-black/60 backdrop-blur-sm rounded-full p-6 border border-white/30 group-hover:bg-black/70 transition-colors duration-300">
+              <Play className="w-10 h-10 text-white ml-1" fill="white" />
+            </div>
+          </div>
+        )}
+
+        {/* Lock icon for photos */}
+        {!isVideo && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-black/60 backdrop-blur-sm rounded-full p-6 border border-white/30 group-hover:bg-black/70 transition-colors duration-300">
+              <Lock className="w-10 h-10 text-white" />
+            </div>
+          </div>
+        )}
+
+        {/* Bottom section with price and unlock button */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 space-y-5">
+          {/* Price */}
+
+          {/* Unlock button */}
+          <button
+            className={`w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg`}
+            onClick={() => onBuy(content)}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Lock className="w-4 h-4" />
+              Unlock Content
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Image Lightbox Component
 const ImageLightbox = ({
@@ -194,20 +383,6 @@ const CharacterInfoCard = ({
         </div>
       )}
 
-      {/*{meta.keyTraits && (*/}
-      {/*  <div className="mt-4">*/}
-      {/*    <p className="text-zinc-400 text-sm mb-2">Key Traits</p>*/}
-      {/*    <p className="text-white text-sm leading-relaxed">{meta.keyTraits}</p>*/}
-      {/*  </div>*/}
-      {/*)}*/}
-
-      {/*{meta.background && (*/}
-      {/*  <div className="mt-4">*/}
-      {/*    <p className="text-zinc-400 text-sm mb-2">Background</p>*/}
-      {/*    <p className="text-white text-sm leading-relaxed">{meta.background}</p>*/}
-      {/*  </div>*/}
-      {/*)}*/}
-
       {meta.physicalDescription && (
         <div className="mt-4">
           <p className="text-zinc-400 text-sm mb-2">Physical Description</p>
@@ -274,6 +449,23 @@ export default function CharacterProfileTemplate({
       targetId: content?.id,
       currency: 'OTT',
     }).then(async (res) => {
+      if (res.error && res.error.message.includes('Insufficient')) {
+        openModal({
+          type: 'message',
+          content: (
+            <InsufficientTokens
+              requiredTokens={content.price}
+              currentBalance={user?.balances.oTT}
+              buyToken={() => {
+                openModal({
+                  type: 'message',
+                  content: <TokensModal />,
+                });
+              }}
+            />
+          ),
+        });
+      }
       const newUrl = res.url;
       if (currentCharacter.meta.privateContent && res.status === 'SUCCESS') {
         const updatedPrivateContent: PrivateContent[] =
@@ -301,7 +493,7 @@ export default function CharacterProfileTemplate({
   };
 
   const onBack = () => {
-    router.push('/');
+    router.back();
   };
 
   useEffect(() => {
@@ -314,7 +506,7 @@ export default function CharacterProfileTemplate({
         ),
       });
     }
-  }, [activeTab]);
+  }, [activeTab, isAuthenticated, openModal, closeModal]);
 
   return (
     currentCharacter && (
@@ -332,11 +524,14 @@ export default function CharacterProfileTemplate({
           {/* Mobile Header */}
           {isMobile && (
             <div className="relative h-48">
-              <SafeImage
-                src={`${currentCharacter.meta.profileImage}`}
-                alt={`${currentCharacter.name}'s cover`}
-                className="w-full h-full object-cover"
-              />
+              {currentCharacter.meta.backgroundImage && (
+                <img
+                  src={`${currentCharacter.meta.backgroundImage}`}
+                  alt={`${currentCharacter.name}'s cover`}
+                  className="w-full h-full object-cover"
+                />
+              )}
+
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
               <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center">
                 <button
@@ -345,12 +540,6 @@ export default function CharacterProfileTemplate({
                   aria-label="Go back"
                 >
                   <ArrowLeft size={20} />
-                </button>
-                <button
-                  className="bg-black/40 backdrop-blur-sm rounded-full p-3 text-white border border-white/20 hover:bg-black/60 transition-all duration-300"
-                  aria-label="Share profile"
-                >
-                  <Share2 size={20} />
                 </button>
               </div>
             </div>
@@ -564,25 +753,15 @@ export default function CharacterProfileTemplate({
                     currentCharacter?.meta.publicContent
                       .filter((item) => item.mimeType.includes('image'))
                       .map((media, index) => (
-                        <div
-                          key={index}
-                          className={`${isMobile ? 'aspect-square' : 'aspect-square rounded-xl overflow-hidden'} relative group cursor-pointer`}
-                          onClick={() =>
-                            handleImageClick(
-                              media.url,
-                              `${currentCharacter.name}'s gallery ${index + 1}`
-                            )
-                          }
-                        >
-                          <SafeImage
-                            src={media.url}
-                            alt={`${currentCharacter.name}'s gallery ${index + 1}`}
-                            className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
-                            width={isMobile ? 120 : 300}
-                            height={isMobile ? 120 : 300}
-                          />
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-xl" />
-                        </div>
+                        <ContentCard
+                          key={media.id}
+                          content={media}
+                          onBuy={handleBuyContent}
+                          onImageClick={handleImageClick}
+                          isMobile={isMobile}
+                          characterName={currentCharacter.name}
+                          isPublic={true}
+                        />
                       ))}
                 </div>
               </TabsContent>
@@ -592,73 +771,30 @@ export default function CharacterProfileTemplate({
                   className={`grid ${isMobile ? 'grid-cols-2 gap-4' : 'grid-cols-3 gap-6'}`}
                 >
                   {currentCharacter.meta.privateContent ? (
-                    currentCharacter.meta.privateContent.map((content) => {
-                      if (content.purchased) {
-                        return (
-                          <div
-                            key={content.id}
-                            className="relative rounded-xl overflow-hidden group cursor-pointer"
-                          >
-                            <div className="aspect-square">
-                              {content.mimeType.includes('video') ? (
-                                <video
-                                  src={content.url}
-                                  className="w-full h-full object-cover"
-                                  controls={true}
-                                />
-                              ) : (
-                                <img
-                                  src={content.url}
-                                  alt={`Premium content ${content.id}`}
-                                  className="w-full h-full object-cover"
-                                  width={isMobile ? 150 : 300}
-                                  height={isMobile ? 150 : 300}
-                                  onClick={() =>
-                                    handleImageClick(
-                                      content.url,
-                                      `${currentCharacter.name}'s profile`
-                                    )
-                                  }
-                                />
-                              )}
-                            </div>
-                          </div>
-                        );
-                      }
-                      return (
-                        <div
-                          key={content.id}
-                          className="relative rounded-xl overflow-hidden group cursor-pointer"
-                        >
-                          <div className="aspect-square">
-                            <SafeImage
-                              src={content.url}
-                              alt={`Premium content ${content.id}`}
-                              className="w-full h-full object-cover"
-                              width={isMobile ? 150 : 300}
-                              height={isMobile ? 150 : 300}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col items-center justify-end p-4">
-                              <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-3 shadow-lg">
-                                {content.price} GPT
-                              </div>
-                              <button
-                                className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
-                                onClick={() => handleBuyContent(content)}
-                              >
-                                Unlock
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
+                    currentCharacter.meta.privateContent.map((content) => (
+                      <ContentCard
+                        key={content.id}
+                        content={content}
+                        onBuy={handleBuyContent}
+                        onImageClick={handleImageClick}
+                        isMobile={isMobile}
+                        characterName={currentCharacter.name}
+                      />
+                    ))
                   ) : (
                     <div className="col-span-full text-center py-12">
                       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
-                        <p className="text-zinc-400 text-lg">
-                          No premium content available yet
-                        </p>
+                        <div className="flex flex-col items-center space-y-4">
+                          <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-full p-4">
+                            <Lock className="w-8 h-8 text-white" />
+                          </div>
+                          <p className="text-zinc-400 text-lg">
+                            No premium content available yet
+                          </p>
+                          <p className="text-zinc-500 text-sm">
+                            Check back later for exclusive content!
+                          </p>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -673,19 +809,15 @@ export default function CharacterProfileTemplate({
                     currentCharacter.meta.publicContent
                       .filter((item) => item.mimeType.includes('video'))
                       .map((media, index) => (
-                        <div
-                          key={index}
-                          className="relative rounded-xl overflow-hidden shadow-lg"
-                        >
-                          <div className="aspect-video">
-                            <video
-                              src={media.url}
-                              className="w-full h-full object-cover"
-                              controls
-                              preload="none"
-                            />
-                          </div>
-                        </div>
+                        <ContentCard
+                          key={media.id}
+                          content={media}
+                          onBuy={handleBuyContent}
+                          onImageClick={handleImageClick}
+                          isMobile={isMobile}
+                          characterName={currentCharacter.name}
+                          isPublic={true}
+                        />
                       ))}
                   {currentCharacter?.meta.publicContent &&
                     currentCharacter.meta.publicContent.filter((item) =>
@@ -693,9 +825,20 @@ export default function CharacterProfileTemplate({
                     ).length === 0 && (
                       <div className="col-span-full text-center py-12">
                         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
-                          <p className="text-zinc-400 text-lg">
-                            No videos available yet
-                          </p>
+                          <div className="flex flex-col items-center space-y-4">
+                            <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-full p-4">
+                              <Play
+                                className="w-8 h-8 text-white ml-1"
+                                fill="white"
+                              />
+                            </div>
+                            <p className="text-zinc-400 text-lg">
+                              No videos available yet
+                            </p>
+                            <p className="text-zinc-500 text-sm">
+                              Check back later for video content!
+                            </p>
+                          </div>
                         </div>
                       </div>
                     )}
