@@ -10,6 +10,16 @@ const config: Config = {
     '*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    screens: {
+      'xss':'300px',
+      'xs': '475px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+      '3xl': '1600px',
+    },
     extend: {
       backdropBlur: {
         '0.5': '0.5px',
