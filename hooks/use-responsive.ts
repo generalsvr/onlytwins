@@ -43,6 +43,9 @@ export function useResponsive() {
       } else if (window.innerWidth >= breakpoints.md) {
         setBreakpoint('md');
         setIsMobile(false);
+      } else if (window.innerWidth >= breakpoints.md) {
+        setBreakpoint('m');
+        setIsMobile(true);
       } else if (window.innerWidth >= breakpoints.sm) {
         setBreakpoint('sm');
         setIsMobile(true);
