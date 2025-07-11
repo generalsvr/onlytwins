@@ -7,7 +7,7 @@ export const getAllAgents = async (): Promise<AgentResponse[]> => {
     params: {
       limit: 50,
       offset: 0,
-      includePublicContent: true
+      includePublicContent: true,
     },
   });
   return response.data;
@@ -17,16 +17,17 @@ export const getAllPublicAgents = async (): Promise<AgentResponse[]> => {
     params: {
       limit: 50,
       offset: 0,
-      includePublicContent: true
+      includePublicContent: true,
     },
   });
   return response.data;
 };
 export const getAgent = async (agentId: number): Promise<AgentResponse> => {
-  const response = await serverApi.get<AgentResponse>(`/agents/${agentId}`,{
-    params:{
-      "include_private_content": true
-    }
+  const response = await serverApi.get<AgentResponse>(`/agents/${agentId}`, {
+    params: {
+      include_private_content: true,
+      include_public_content: true,
+    },
   });
   return response.data;
 };
@@ -34,7 +35,10 @@ export const getPublicAgent = async (
   agentId: number
 ): Promise<AgentResponse> => {
   const response = await serverApi.get<AgentResponse>(
-    `/agents/public/${agentId}`
+    `/agents/public/${agentId}`,
+    {
+      params: { include_public_content: true },
+    }
   );
   return response.data;
 };
